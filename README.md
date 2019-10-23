@@ -1,0 +1,2 @@
+# CavalierContours
+Curve offsetting algorithm
