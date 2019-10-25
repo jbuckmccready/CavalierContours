@@ -41,10 +41,16 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
 
   Vector2<Real> w = u1 - v1;
 
-  // test if point is inside a segment, NOTE: assumes the point lies somewhere along the infinite
-  // line (collinear)
+  // test if point is inside a segment
   auto isInSegment = [](Vector2<Real> const &pt, Vector2<Real> const &segStart,
                         Vector2<Real> const &segEnd) {
+
+    Real crossP = (pt.y() - segStart.y()) * (segEnd.x() - segStart.x()) -
+                  (pt.x() - segStart.x()) * (segEnd.y() - segStart.y());
+    if (std::abs(crossP) > utils::realThreshold<Real>) {
+      return false;
+    }
+
     if (segStart.x() == segEnd.x()) {
       // vertical segment, test y coordinate
       return (segStart.y() <= pt.y() && pt.y() <= segEnd.y()) ||
@@ -80,11 +86,11 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
       result.intrType = LineSeg2LineSeg2IntrType::None;
     } else {
       // either collinear or degenerate (segments are single points)
-      bool uIsPoint = u1 == u2;
-      bool vIsPoint = v1 == v2;
+      bool uIsPoint = fuzzyEqual(u1, u2);
+      bool vIsPoint = fuzzyEqual(v1, v2);
       if (uIsPoint && vIsPoint) {
         // both segments are just points
-        if (u1 == v1) {
+        if (fuzzyEqual(u1, v1)) {
           // same point
           result.point = u1;
           result.intrType = LineSeg2LineSeg2IntrType::True;

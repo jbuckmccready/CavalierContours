@@ -54,24 +54,19 @@ IntrCircle2Circle2Result<Real> intrCircle2Circle2(Real radius1, Vector2<Real> co
         result.point1 = midPoint;
       } else {
         Real h = std::sqrt(diff);
-        if (h < utils::realThreshold<Real>) {
+        Real hOverD = h / d;
+        Real xTerm = hOverD * cv.y();
+        Real yTerm = hOverD * cv.x();
+        Real x1 = midPoint.x() + xTerm;
+        Real y1 = midPoint.y() - yTerm;
+        Real x2 = midPoint.x() - xTerm;
+        Real y2 = midPoint.y() + yTerm;
+        result.point1 = Vector2<Real>(x1, y1);
+        result.point2 = Vector2<Real>(x2, y2);
+        if (fuzzyEqual(result.point1, result.point2)) {
           result.intrType = Circle2Circle2IntrType::OneIntersect;
-          result.point1 = midPoint;
         } else {
-          Real hOverD = h / d;
-          Real xTerm = hOverD * cv.y();
-          Real yTerm = hOverD * cv.x();
-          Real x1 = midPoint.x() + xTerm;
-          Real y1 = midPoint.y() - yTerm;
-          Real x2 = midPoint.x() - xTerm;
-          Real y2 = midPoint.y() + yTerm;
-          result.point1 = Vector2<Real>(x1, y1);
-          result.point2 = Vector2<Real>(x2, y2);
-          if (fuzzyEqual(result.point1, result.point2)) {
-            result.intrType = Circle2Circle2IntrType::OneIntersect;
-          } else {
-            result.intrType = Circle2Circle2IntrType::TwoIntersects;
-          }
+          result.intrType = Circle2Circle2IntrType::TwoIntersects;
         }
       }
     }
