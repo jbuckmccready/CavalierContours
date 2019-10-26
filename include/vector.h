@@ -151,8 +151,11 @@ Vector<Real, N> operator+(Vector<Real, N> const &v0, Vector<Real, N> const &v1) 
 
 template <std::size_t N, typename Real>
 Vector<Real, N> operator-(Vector<Real, N> const &v0, Vector<Real, N> const &v1) {
-  Vector<Real, N> result = v0;
-  return result -= v1;
+  Vector<Real, N> result;
+  for (std::size_t i = 0; i < N; i++) {
+    result[i] = v0[i] - v1[i];
+  }
+  return result;
 }
 
 template <std::size_t N, typename Real>

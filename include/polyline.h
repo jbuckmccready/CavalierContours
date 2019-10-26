@@ -44,29 +44,29 @@ template <typename Real> class Polyline {
 public:
   Polyline() : m_isClosed(false), m_vertexes() {}
 
-  using PlineVertex = PlineVertex<Real>;
+  using PVertex = PlineVertex<Real>;
 
-  inline PlineVertex const &operator[](std::size_t i) const { return m_vertexes[i]; }
+  inline PVertex const &operator[](std::size_t i) const { return m_vertexes[i]; }
 
-  inline PlineVertex &operator[](std::size_t i) { return m_vertexes[i]; }
+  inline PVertex &operator[](std::size_t i) { return m_vertexes[i]; }
 
   bool isClosed() const { return m_isClosed; }
   bool &isClosed() { return m_isClosed; }
 
   void addVertex(Real x, Real y, Real bulge) { m_vertexes.emplace_back(x, y, bulge); }
-  void addVertex(PlineVertex vertex) { addVertex(vertex.x(), vertex.y(), vertex.bulge()); }
+  void addVertex(PVertex vertex) { addVertex(vertex.x(), vertex.y(), vertex.bulge()); }
 
   std::size_t size() const { return m_vertexes.size(); }
 
-  PlineVertex const &lastVertex() const { return m_vertexes.back(); }
-  PlineVertex &lastVertex() { return m_vertexes.back(); }
+  PVertex const &lastVertex() const { return m_vertexes.back(); }
+  PVertex &lastVertex() { return m_vertexes.back(); }
 
-  std::vector<PlineVertex> &vertexes() { return m_vertexes; }
-  std::vector<PlineVertex> const &vertexes() const { return m_vertexes; }
+  std::vector<PVertex> &vertexes() { return m_vertexes; }
+  std::vector<PVertex> const &vertexes() const { return m_vertexes; }
 
 private:
   bool m_isClosed;
-  std::vector<PlineVertex> m_vertexes;
+  std::vector<PVertex> m_vertexes;
 };
 
 // Polyline traversal/iteration functions.
@@ -1215,6 +1215,7 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset,
       inwardOffset ? -plineCurveOrientation : plineCurveOrientation;
 
   Polyline<Real> result;
+  result.vertexes().reserve(pline.size());
   result.isClosed() = pline.isClosed();
 
   std::vector<PlineOffsetSegment<Real>> rawOffsets = createUntrimmedOffsetSegments(pline, offset);
@@ -1412,7 +1413,6 @@ void globalSelfIntersects(Polyline<Real> const &pline,
     const PlineVertex<Real> &v2 = pline[j];
     AABB<Real> envelope = createFastApproxBoundingBox(v1, v2);
     envelope.expand(utils::realThreshold<Real>);
-    auto count = 0;
     auto indexVisitor = [&](std::size_t hitIndexStart) {
       std::size_t hitIndexEnd = utils::nextWrappingIndex(hitIndexStart, pline);
       // skip/filter already visited intersects
@@ -1420,7 +1420,6 @@ void globalSelfIntersects(Polyline<Real> const &pline,
       if (i == hitIndexStart || i == hitIndexEnd || j == hitIndexStart || j == hitIndexEnd) {
         return true;
       }
-      count++;
       // skip reversed segment order (would end up comparing the same segments)
       if (visitedSegmentPairs.find(std::make_pair(hitIndexStart, i)) != visitedSegmentPairs.end()) {
         return true;

@@ -131,7 +131,8 @@ public:
     std::size_t nodeIndex = m_boxes.size() - 4;
     std::size_t level = m_levelBounds.size() - 1;
 
-    std::stack<std::size_t> stack;
+    std::vector<std::size_t> stack;
+    stack.reserve(16);
 
     bool done = false;
     while (!done) {
@@ -141,16 +142,16 @@ public:
         visitor(m_boxes[pos], m_boxes[pos + 1], m_boxes[pos + 2], m_boxes[pos + 3], level);
 
         if (nodeIndex >= m_numItems * 4) {
-          stack.push(index);
-          stack.push(level - 1);
+          stack.push_back(index);
+          stack.push_back(level - 1);
         }
       }
 
       if (stack.size() > 1) {
-        level = stack.top();
-        stack.pop();
-        nodeIndex = stack.top();
-        stack.pop();
+        level = stack.back();
+        stack.pop_back();
+        nodeIndex = stack.back();
+        stack.pop_back();
       } else {
         done = true;
       }
@@ -174,7 +175,9 @@ public:
     auto level = m_levelBounds.size() - 1;
 
     // stack for traversing nodes
-    std::stack<std::size_t> stack;
+    std::vector<std::size_t> stack;
+    // reserve some space to avoid repeated small allocations
+    stack.reserve(16);
 
     auto done = false;
 
@@ -203,16 +206,16 @@ public:
           }
         } else {
           // push node index and level for further traversal
-          stack.push(index);
-          stack.push(level - 1);
+          stack.push_back(index);
+          stack.push_back(level - 1);
         }
       }
 
       if (stack.size() > 1) {
-        level = stack.top();
-        stack.pop();
-        nodeIndex = stack.top();
-        stack.pop();
+        level = stack.back();
+        stack.pop_back();
+        nodeIndex = stack.back();
+        stack.pop_back();
       } else {
         done = true;
       }
