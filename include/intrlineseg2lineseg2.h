@@ -45,9 +45,11 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
   auto isInSegment = [](Vector2<Real> const &pt, Vector2<Real> const &segStart,
                         Vector2<Real> const &segEnd) {
 
+    // test that pt, segStart, and segEnd are all aligned
     Real crossP = (pt.y() - segStart.y()) * (segEnd.x() - segStart.x()) -
                   (pt.x() - segStart.x()) * (segEnd.y() - segStart.y());
     if (std::abs(crossP) > utils::realThreshold<Real>) {
+      // not aligned
       return false;
     }
 

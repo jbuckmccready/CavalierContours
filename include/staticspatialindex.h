@@ -127,6 +127,8 @@ public:
     }
   }
 
+  // Visit all the bounding boxes in the spatial index. Visitor function has the signature
+  // void(Real xmin, Real ymin, Real xmax, Real ymax, std::size_t level).
   template <typename F> void visitBoundingBoxes(F &&visitor) const {
     std::size_t nodeIndex = m_boxes.size() - 4;
     std::size_t level = m_levelBounds.size() - 1;
@@ -158,6 +160,7 @@ public:
     }
   }
 
+  // Query the spatial index adding indexes to the results vector given.
   void query(Real minX, Real minY, Real maxX, Real maxY, std::vector<std::size_t> &results) const {
     auto visitor = [&](std::size_t index) {
       results.push_back(index);
@@ -167,6 +170,9 @@ public:
     visitQuery(minX, minY, maxX, maxY, visitor);
   }
 
+  // Query the spatial index, invoking a visitor function for each index that overlaps the bounding
+  // box given. Visitor function has the signature bool(std::size_t index), if visitor returns false
+  // the query stops early, otherwise the query continues.
   template <typename F>
   void visitQuery(Real minX, Real minY, Real maxX, Real maxY, F &&visitor) const {
     assert(m_pos == m_boxes.size() && "data not yet indexed - call Finish() before querying");
