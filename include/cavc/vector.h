@@ -20,13 +20,13 @@ public:
   }
 
   Vector(Real x, Real y) {
-    static_assert (N == 2, "constructor for Vector2 only");
+    static_assert(N == 2, "constructor for Vector2 only");
     m_data[0] = x;
     m_data[1] = y;
   }
 
   Vector(Real x, Real y, Real z) {
-    static_assert (N == 3, "constructor for Vector3 only");
+    static_assert(N == 3, "constructor for Vector3 only");
     m_data[0] = x;
     m_data[1] = y;
     m_data[2] = z;
@@ -263,6 +263,6 @@ template <std::size_t N, typename Real> Real normalize(Vector<Real, N> &v) {
   v /= length;
   return length;
 }
-}
+} // namespace cavc
 
 #endif // CAVC_VECTOR_H

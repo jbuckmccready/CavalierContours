@@ -69,7 +69,9 @@ private:
   std::vector<PVertex> m_vertexes;
 };
 
-// Polyline traversal/iteration functions.
+/// Iterate the segement indices of a polyline. f is invoked for each segment index pair, iteration
+/// stops when all indices have been iterated or f returns false. f signature is bool(std::size_t,
+/// std::size_t).
 template <typename Real, typename F> void iterateSegIndices(Polyline<Real> const &pline, F &&f) {
   std::size_t i;
   std::size_t j;
@@ -87,28 +89,13 @@ template <typename Real, typename F> void iterateSegIndices(Polyline<Real> const
   }
 }
 
-template <typename Real, typename F> void iterateSegs(Polyline<Real> const &pline, F &&f) {
-  auto visitor = [&](std::size_t i, std::size_t j) {
-    return std::forward<F>(f)(pline[i], pline[j]);
-  };
-
-  iterateSegIndices(pline, visitor);
-}
-
-template <typename Real, typename F> void iterateSegs(Polyline<Real> &pline, F &&f) {
-  auto visitor = [&](std::size_t i, std::size_t j) {
-    return std::forward<F>(f)(pline[i], pline[j]);
-  };
-
-  iterateSegIndices(pline, visitor);
-}
-
+/// Result from computing the arc radius and arc center of a segment.
 template <typename Real> struct ArcRadiusAndCenter {
   Real radius;
   Vector2<Real> center;
 };
 
-/// Get the arc radius and arc center of a arc segment defined by v1 to v2.
+/// Compute the arc radius and arc center of a arc segment defined by v1 to v2.
 template <typename Real>
 ArcRadiusAndCenter<Real> arcRadiusAndCenter(PlineVertex<Real> const &v1,
                                             PlineVertex<Real> const &v2) {
@@ -133,18 +120,6 @@ ArcRadiusAndCenter<Real> arcRadiusAndCenter(PlineVertex<Real> const &v1,
 
   Vector2<Real> c{v1.x() + v.x() / Real(2) + offsX, v1.y() + v.y() / Real(2) + offsY};
   return ArcRadiusAndCenter<Real>{r, c};
-}
-
-template <typename Real>
-Vector2<Real> arcTangentVector(Vector2<Real> const &arcCenter, bool isCCW,
-                               Vector2<Real> const &pointOnArc) {
-  if (isCCW) {
-    // counter clockwise, rotate vector from center to pointOnArc 90 degrees
-    return Vector2<Real>(arcCenter.y() - pointOnArc.y(), pointOnArc.x() - arcCenter.x());
-  }
-
-  // clockwise, rotate vector from center to pointOnArc -90 degrees
-  return Vector2<Real>(pointOnArc.y() - arcCenter.y(), arcCenter.x() - pointOnArc.x());
 }
 
 /// Result of splitting a segment v1 to v2.
@@ -279,6 +254,7 @@ template <typename Real> AABB<Real> extents(Polyline<Real> const &pline) {
   return result;
 }
 
+/// Compute the closest point on a segment defined by v1 to v2 to the point given.
 template <typename Real>
 Vector2<Real> closestPointOnSeg(PlineVertex<Real> const &v1, PlineVertex<Real> const &v2,
                                 Vector2<Real> const &point) {
@@ -310,12 +286,15 @@ Vector2<Real> closestPointOnSeg(PlineVertex<Real> const &v1, PlineVertex<Real> c
   return v2.pos();
 }
 
+/// Result from computing the closest point and index.
 template <typename Real> struct ClosestPointAndIndex {
   std::size_t index;
   Vector2<Real> point;
   Real distance;
 };
 
+/// Computes the closest point and starting vertex index of the segment that point lies on to the
+/// point given.
 template <typename Real>
 ClosestPointAndIndex<Real> closestPointAndIndex(Polyline<Real> const &pline,
                                                 Vector2<Real> const &point) {
@@ -427,6 +406,8 @@ AABB<Real> createFastApproxBoundingBox(PlineVertex<Real> const &v1, PlineVertex<
   return result;
 }
 
+/// Creates an approximate spatial index for all the segments in the polyline given using
+/// createFastApproxBoundingBox.
 template <typename Real>
 StaticSpatialIndex<Real> createApproxSpatialIndex(Polyline<Real> const &pline) {
   assert(pline.size() > 1 && "need at least 2 vertexes to form segments for spatial index");
@@ -450,6 +431,9 @@ StaticSpatialIndex<Real> createApproxSpatialIndex(Polyline<Real> const &pline) {
   return result;
 }
 
+/// Inverts the direction of the polyline given. If polyline is closed then this just changes the
+/// direction from clockwise to counter clockwise, if polyline is open then the starting vertex
+/// becomes the end vertex and the end vertex becomes the starting vertex.
 template <typename Real> void invertDirection(Polyline<Real> &pline) {
   if (pline.size() < 2) {
     return;
@@ -466,6 +450,8 @@ template <typename Real> void invertDirection(Polyline<Real> &pline) {
   pline.lastVertex().bulge() = -firstBulge;
 }
 
+/// Returns a new polyline with all singularities (repeating vertex positions) from the polyline
+/// given removed.
 template <typename Real>
 Polyline<Real> pruneSingularities(Polyline<Real> const &pline,
                                   Real epsilon = utils::realPrecision<Real>) {
@@ -546,6 +532,7 @@ template <typename Real> Real area(Polyline<Real> const &pline) {
   return (doubleEdgeAreaTotal + doubleArcSegAreaTotal) / Real(2);
 }
 
+/// Represents a raw polyline offset segment.
 template <typename Real> struct PlineOffsetSegment {
   PlineVertex<Real> v1;
   PlineVertex<Real> v2;
@@ -553,6 +540,7 @@ template <typename Real> struct PlineOffsetSegment {
   bool collapsedArc;
 };
 
+/// Creates all the raw polyline offset segments.
 template <typename Real>
 std::vector<PlineOffsetSegment<Real>> createUntrimmedOffsetSegments(Polyline<Real> const &pline,
                                                                     Real offset) {
@@ -626,6 +614,18 @@ struct IndexPairHash {
     return std::hash<std::size_t>()(pair.first) ^ std::hash<std::size_t>()(pair.second);
   }
 };
+
+template <typename Real>
+Vector2<Real> arcTangentVector(Vector2<Real> const &arcCenter, bool isCCW,
+                               Vector2<Real> const &pointOnArc) {
+  if (isCCW) {
+    // counter clockwise, rotate vector from center to pointOnArc 90 degrees
+    return Vector2<Real>(arcCenter.y() - pointOnArc.y(), pointOnArc.x() - arcCenter.x());
+  }
+
+  // clockwise, rotate vector from center to pointOnArc -90 degrees
+  return Vector2<Real>(pointOnArc.y() - arcCenter.y(), arcCenter.x() - pointOnArc.x());
+}
 
 template <typename Real> bool falseIntersect(Real t) { return t < 0.0 || t > 1.0; }
 
@@ -992,7 +992,6 @@ IntrPlineSegsResult<Real> intrPlineSegs(PlineVertex<Real> const &v1, PlineVertex
   // helper function to process line arc intersect
   auto processLineArcIntr = [&result](Vector2<Real> const &p0, Vector2<Real> const &p1,
                                       PlineVertex<Real> const &a1, PlineVertex<Real> const &a2) {
-
     auto arc = arcRadiusAndCenter(a1, a2);
     auto intrResult = intrLineSeg2Circle2(p0, p1, arc.radius, arc.center);
 
@@ -1233,8 +1232,33 @@ void offsetCircleIntersectsWithPline(Polyline<Real> const &pline, Real circleRad
     }
   }
 }
+
+/// Function to test if a point is a valid distance from the original polyline.
+template <typename Real, std::size_t N>
+bool pointValidForOffset(Polyline<Real> const &pline, Real offset,
+                         StaticSpatialIndex<Real, N> const &spatialIndex,
+                         Vector2<Real> const &point, Real offsetTol = Real(1e-3)) {
+  const Real absOffset = std::abs(offset) - offsetTol;
+  const Real minDist = absOffset * absOffset;
+
+  bool pointValid = true;
+
+  auto visitor = [&](std::size_t i) {
+    std::size_t j = utils::nextWrappingIndex(i, pline.vertexes());
+    auto closestPoint = closestPointOnSeg(pline[i], pline[j], point);
+    Real dist = distSquared(closestPoint, point);
+    pointValid = dist > minDist;
+    return pointValid;
+  };
+
+  spatialIndex.visitQuery(point.x() - absOffset, point.y() - absOffset, point.x() + absOffset,
+                          point.y() + absOffset, visitor);
+  return pointValid;
+}
+
 } // namespace detail
 
+/// Creates the raw offset polyline.
 template <typename Real>
 Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
 
@@ -1323,8 +1347,12 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
   return result;
 }
 
+/// Enum to represent the type of polyline intersect. Simple is a basic intersect, tangent is a
+/// tangent intersect (between an arc and line or two arcs) and coincident represents when two
+/// segments overlap.
 enum class PlineIntersectType { Simple, Tangent, Coincident };
 
+/// Represents a polyline intersect.
 template <typename Real> struct PlineIntersect {
   // index of start vertex of first segment
   std::size_t sIndex1;
@@ -1338,10 +1366,9 @@ template <typename Real> struct PlineIntersect {
       : sIndex1(si1), sIndex2(si2), pos(p), intrType(iType) {}
 };
 
-// Finds all local self intersects of the polyline, local self intersects are defined as between two
-// polyline segments that share a vertex.
-// NOTES:
-// - Singularities (repeating vertexes) are returned as coincident intersects
+/// Finds all local self intersects of the polyline, local self intersects are defined as between
+/// two polyline segments that share a vertex. NOTES:
+/// - Singularities (repeating vertexes) are returned as coincident intersects
 template <typename Real>
 void localSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect<Real>> &output) {
   if (pline.size() < 2) {
@@ -1398,7 +1425,6 @@ void localSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect
         break;
       }
     }
-
   };
 
   for (std::size_t i = 2; i < pline.size(); ++i) {
@@ -1414,13 +1440,13 @@ void localSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect
   }
 }
 
-// Finds all global self intersects of the polyline, global self intersects are defined as all
-// intersects between polyline segments that DO NOT share a vertex (use the localSelfIntersects
-// function to find those). A spatial index is used to minimize the intersect comparisons required,
-// the spatial index should hold bounding boxes for all of the polyline's segments.
-// NOTES:
-// - We never include intersects at a segment's start point, the matching intersect from the
-// previous segment's end point is included (no sense in including both)
+/// Finds all global self intersects of the polyline, global self intersects are defined as all
+/// intersects between polyline segments that DO NOT share a vertex (use the localSelfIntersects
+/// function to find those). A spatial index is used to minimize the intersect comparisons required,
+/// the spatial index should hold bounding boxes for all of the polyline's segments.
+/// NOTES:
+/// - We never include intersects at a segment's start point, the matching intersect from the
+/// previous segment's end point is included (no sense in including both)
 template <typename Real, std::size_t N>
 void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect<Real>> &output,
                           StaticSpatialIndex<Real, N> const &spatialIndex) {
@@ -1505,8 +1531,8 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
   iterateSegIndices(pline, visitor);
 }
 
-// Finds all self intersects of the polyline (equivalent to calling localSelfIntersects and
-// globalSelfIntersects).
+/// Finds all self intersects of the polyline (equivalent to calling localSelfIntersects and
+/// globalSelfIntersects).
 template <typename Real, std::size_t N>
 void allSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect<Real>> &output,
                        StaticSpatialIndex<Real, N> const &spatialIndex) {
@@ -1514,28 +1540,7 @@ void allSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect<R
   globalSelfIntersects(pline, output, spatialIndex);
 }
 
-template <typename Real, std::size_t N>
-bool pointValidForOffset(Polyline<Real> const &pline, Real offset,
-                         StaticSpatialIndex<Real, N> const &spatialIndex,
-                         Vector2<Real> const &point, Real offsetTol = Real(1e-3)) {
-  const Real absOffset = std::abs(offset) - offsetTol;
-  const Real minDist = absOffset * absOffset;
-
-  bool pointValid = true;
-
-  auto visitor = [&](std::size_t i) {
-    std::size_t j = utils::nextWrappingIndex(i, pline.vertexes());
-    auto closestPoint = closestPointOnSeg(pline[i], pline[j], point);
-    Real dist = distSquared(closestPoint, point);
-    pointValid = dist > minDist;
-    return pointValid;
-  };
-
-  spatialIndex.visitQuery(point.x() - absOffset, point.y() - absOffset, point.x() + absOffset,
-                          point.y() + absOffset, visitor);
-  return pointValid;
-}
-
+/// Represents an open polyline slice of the raw offset polyline.
 template <typename Real> struct OpenPolylineSlice {
   std::size_t intrStartIndex;
   Polyline<Real> pline;
@@ -1544,6 +1549,7 @@ template <typename Real> struct OpenPolylineSlice {
       : intrStartIndex(sIndex), pline(std::move(slice)) {}
 };
 
+/// Finds all intersects between pline1 and pline2.
 template <typename Real, std::size_t N>
 void intersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
                 StaticSpatialIndex<Real, N> const &pline1SpatialIndex,
@@ -1610,6 +1616,7 @@ void intersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
   iterateSegIndices(pline2, pline2SegVisitor);
 }
 
+/// Slices a raw offset polyline at all of its self intersects.
 template <typename Real>
 std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &originalPline,
                                                        Polyline<Real> const &rawOffsetPline,
@@ -1640,8 +1647,8 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
     // no intersects, test that all vertexes are valid distance from original polyline
     bool isValid = std::all_of(rawOffsetPline.vertexes().begin(), rawOffsetPline.vertexes().end(),
                                [&](PlineVertex<Real> const &v) {
-                                 return pointValidForOffset(originalPline, offset,
-                                                            origPlineSpatialIndex, v.pos());
+                                 return detail::pointValidForOffset(originalPline, offset,
+                                                                    origPlineSpatialIndex, v.pos());
                                });
 
     if (!isValid) {
@@ -1708,20 +1715,20 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
         }
 
         // test start point
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
-                                 split.updatedStart.pos())) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         split.updatedStart.pos())) {
           continue;
         }
 
         // test end point
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
-                                 split.splitVertex.pos())) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         split.splitVertex.pos())) {
           continue;
         }
 
         // test mid point
         auto midpoint = detail::segMidpoint(split.updatedStart, split.splitVertex);
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, midpoint)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex, midpoint)) {
           continue;
         }
 
@@ -1740,7 +1747,7 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
     // build the segment between the last intersect in siList and the next intersect found
 
     // check that the first point is valid
-    if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, siList.back())) {
+    if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex, siList.back())) {
       continue;
     }
 
@@ -1752,8 +1759,8 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
     bool isValidPline = true;
     while (true) {
       // check that vertex point is valid
-      if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
-                               rawOffsetPline[index].pos())) {
+      if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                       rawOffsetPline[index].pos())) {
         isValidPline = false;
         break;
       }
@@ -1774,7 +1781,8 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
 
         // check intersect pos is valid (which will also be end vertex position)
         Vector2<Real> const &intersectPos = nextIntr->second[0];
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, intersectPos)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         intersectPos)) {
           isValidPline = false;
           break;
         }
@@ -1786,7 +1794,7 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
         PlineVertex<Real> endVertex = PlineVertex<Real>(intersectPos, Real(0));
         // check mid point is valid
         Vector2<Real> mp = detail::segMidpoint(split.updatedStart, endVertex);
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, mp)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex, mp)) {
           isValidPline = false;
           break;
         }
@@ -1809,6 +1817,7 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
   return result;
 }
 
+/// Slices a raw offset polyline at all of its self intersects and intersects with its dual.
 template <typename Real>
 std::vector<OpenPolylineSlice<Real>>
 dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const &rawOffsetPline,
@@ -1859,8 +1868,8 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
     // no intersects, test that all vertexes are valid distance from original polyline
     bool isValid = std::all_of(rawOffsetPline.vertexes().begin(), rawOffsetPline.vertexes().end(),
                                [&](PlineVertex<Real> const &v) {
-                                 return pointValidForOffset(originalPline, offset,
-                                                            origPlineSpatialIndex, v.pos());
+                                 return detail::pointValidForOffset(originalPline, offset,
+                                                                    origPlineSpatialIndex, v.pos());
                                });
 
     if (!isValid) {
@@ -1913,8 +1922,8 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
       auto iter = intersectsLookup.find(index);
       if (iter == intersectsLookup.end()) {
         // no intersect found, test segment will be valid before adding the vertex
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
-                                 rawOffsetPline[index].pos())) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         rawOffsetPline[index].pos())) {
           break;
         }
 
@@ -1927,7 +1936,8 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
       } else {
         // intersect found, test segment will be valid before finishing first open polyline
         Vector2<Real> const &intersectPos = iter->second[0];
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, intersectPos)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         intersectPos)) {
           break;
         }
 
@@ -1936,7 +1946,7 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
 
         PlineVertex<Real> endVertex = PlineVertex<Real>(intersectPos, Real(0));
         auto midpoint = detail::segMidpoint(split.updatedStart, endVertex);
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, midpoint)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex, midpoint)) {
           break;
         }
 
@@ -1979,20 +1989,20 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
         }
 
         // test start point
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
-                                 split.updatedStart.pos())) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         split.updatedStart.pos())) {
           continue;
         }
 
         // test end point
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
-                                 split.splitVertex.pos())) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         split.splitVertex.pos())) {
           continue;
         }
 
         // test mid point
         auto midpoint = detail::segMidpoint(split.updatedStart, split.splitVertex);
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, midpoint)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex, midpoint)) {
           continue;
         }
 
@@ -2011,7 +2021,7 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
     // build the segment between the last intersect in siList and the next intersect found
 
     // check that the first point is valid
-    if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, siList.back())) {
+    if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex, siList.back())) {
       continue;
     }
 
@@ -2023,8 +2033,8 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
     bool isValidPline = true;
     while (true) {
       // check that vertex point is valid
-      if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
-                               rawOffsetPline[index].pos())) {
+      if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                       rawOffsetPline[index].pos())) {
         isValidPline = false;
         break;
       }
@@ -2045,7 +2055,8 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
 
         // check intersect pos is valid (which will also be end vertex position)
         Vector2<Real> const &intersectPos = nextIntr->second[0];
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, intersectPos)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex,
+                                         intersectPos)) {
           isValidPline = false;
           break;
         }
@@ -2057,7 +2068,7 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
         PlineVertex<Real> endVertex = PlineVertex<Real>(intersectPos, Real(0));
         // check mid point is valid
         Vector2<Real> mp = detail::segMidpoint(split.updatedStart, endVertex);
-        if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, mp)) {
+        if (!detail::pointValidForOffset(originalPline, offset, origPlineSpatialIndex, mp)) {
           isValidPline = false;
           break;
         }
@@ -2090,6 +2101,7 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
   return result;
 }
 
+/// Stitches raw offset polyline slices together, discarding any that are not valid.
 template <typename Real>
 std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<Real>> const &slices,
                                                  bool closedPolyline, std::size_t origMaxIndex,
@@ -2202,6 +2214,7 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
   return result;
 }
 
+/// Creates the paralell offset polylines to the polyline given.
 template <typename Real>
 std::vector<Polyline<Real>> paralleOffset(Polyline<Real> const &pline, Real offset) {
   auto rawOffset = createRawOffsetPline(pline, offset);
@@ -2215,6 +2228,7 @@ std::vector<Polyline<Real>> paralleOffset(Polyline<Real> const &pline, Real offs
   auto slices = dualSliceAtIntersects(pline, rawOffset, dualRawOffset, offset);
   return stitchSlicesTogether(slices, pline.isClosed(), rawOffset.size() - 1);
 }
-}
+
+} // namespace cavc
 
 #endif // CAVC_POLYLINE_H

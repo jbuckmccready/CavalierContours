@@ -64,6 +64,6 @@ IntrLineSeg2Circle2Result<Real> intrLineSeg2Circle2(Vector2<Real> const &p0,
   assert(result.numIntersects >= 0 && result.numIntersects <= 2);
   return result;
 }
-}
+} // namespace cavc
 
 #endif // CAVC_INTRLINESEG2CIRCLE2_H

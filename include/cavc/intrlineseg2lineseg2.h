@@ -44,7 +44,6 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
   // test if point is inside a segment
   auto isInSegment = [](Vector2<Real> const &pt, Vector2<Real> const &segStart,
                         Vector2<Real> const &segEnd) {
-
     // test that pt, segStart, and segEnd are all aligned
     Real crossP = (pt.y() - segStart.y()) * (segEnd.x() - segStart.x()) -
                   (pt.x() - segStart.x()) * (segEnd.y() - segStart.y());
@@ -155,5 +154,5 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
 
   return result;
 }
-}
+} // namespace cavc
 #endif // CAVC_INTRLINESEG2LINESEG2_H

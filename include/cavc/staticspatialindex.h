@@ -347,6 +347,6 @@ private:
     return (i1 << 1) | i0;
   }
 };
-}
+} // namespace cavc
 
 #endif // CAVC_STATICSPATIALINDEX_H

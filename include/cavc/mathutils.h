@@ -102,7 +102,7 @@ template <typename T> std::size_t prevWrappingIndex(std::size_t index, const T &
 
   return index - 1;
 }
-}
-}
+} // namespace utils
+} // namespace cavc
 
 #endif // CAVC_MATHUTILS_H

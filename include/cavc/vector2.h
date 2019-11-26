@@ -100,6 +100,6 @@ bool pointWithinArcSweepAngle(Vector2<Real> const &center, Vector2<Real> const &
 
   return isRightOrCoincident(center, arcStart, point) && isLeftOrCoincident(center, arcEnd, point);
 }
-}
+} // namespace cavc
 
 #endif // CAVC_VECTOR2_H

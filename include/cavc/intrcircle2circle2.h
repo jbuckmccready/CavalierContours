@@ -74,6 +74,6 @@ IntrCircle2Circle2Result<Real> intrCircle2Circle2(Real radius1, Vector2<Real> co
 
   return result;
 }
-}
+} // namespace cavc
 
 #endif // CAVC_INTRCIRCLE2CIRCLE2_H
