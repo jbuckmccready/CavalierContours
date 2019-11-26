@@ -1,5 +1,5 @@
-#ifndef MATHUTILS_H
-#define MATHUTILS_H
+#ifndef CAVC_MATHUTILS_H
+#define CAVC_MATHUTILS_H
 
 #include <cassert>
 #include <cmath>
@@ -105,4 +105,4 @@ template <typename T> std::size_t prevWrappingIndex(std::size_t index, const T &
 }
 }
 
-#endif // MATHUTILS_H
+#endif // CAVC_MATHUTILS_H

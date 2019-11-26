@@ -1,5 +1,5 @@
-#ifndef INTRLINESEG2CIRCLE2_H
-#define INTRLINESEG2CIRCLE2_H
+#ifndef CAVC_INTRLINESEG2CIRCLE2_H
+#define CAVC_INTRLINESEG2CIRCLE2_H
 #include "vector2.h"
 namespace cavc {
 template <typename Real> struct IntrLineSeg2Circle2Result {
@@ -66,4 +66,4 @@ IntrLineSeg2Circle2Result<Real> intrLineSeg2Circle2(Vector2<Real> const &p0,
 }
 }
 
-#endif // INTRLINESEG2CIRCLE2_H
+#endif // CAVC_INTRLINESEG2CIRCLE2_H

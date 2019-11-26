@@ -1,5 +1,5 @@
-#ifndef INTRLINESEG2LINESEG2_H
-#define INTRLINESEG2LINESEG2_H
+#ifndef CAVC_INTRLINESEG2LINESEG2_H
+#define CAVC_INTRLINESEG2LINESEG2_H
 #include "vector2.h"
 namespace cavc {
 enum class LineSeg2LineSeg2IntrType {
@@ -156,4 +156,4 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
   return result;
 }
 }
-#endif // INTRLINESEG2LINESEG2_H
+#endif // CAVC_INTRLINESEG2LINESEG2_H

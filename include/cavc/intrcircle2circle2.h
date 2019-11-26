@@ -1,5 +1,5 @@
-#ifndef INTRCIRCLE2CIRCLE2_H
-#define INTRCIRCLE2CIRCLE2_H
+#ifndef CAVC_INTRCIRCLE2CIRCLE2_H
+#define CAVC_INTRCIRCLE2CIRCLE2_H
 #include "vector2.h"
 namespace cavc {
 enum class Circle2Circle2IntrType {
@@ -76,4 +76,4 @@ IntrCircle2Circle2Result<Real> intrCircle2Circle2(Real radius1, Vector2<Real> co
 }
 }
 
-#endif // INTRCIRCLE2CIRCLE2_H
+#endif // CAVC_INTRCIRCLE2CIRCLE2_H

@@ -1,5 +1,5 @@
-#ifndef VECTOR2_H
-#define VECTOR2_H
+#ifndef CAVC_VECTOR2_H
+#define CAVC_VECTOR2_H
 #include "mathutils.h"
 #include "vector.h"
 #include <cmath>
@@ -102,4 +102,4 @@ bool pointWithinArcSweepAngle(Vector2<Real> const &center, Vector2<Real> const &
 }
 }
 
-#endif // VECTOR2_H
+#endif // CAVC_VECTOR2_H

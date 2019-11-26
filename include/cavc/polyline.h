@@ -1,5 +1,5 @@
-#ifndef POLYLINE_H
-#define POLYLINE_H
+#ifndef CAVC_POLYLINE_H
+#define CAVC_POLYLINE_H
 #include "intrcircle2circle2.h"
 #include "intrlineseg2circle2.h"
 #include "intrlineseg2lineseg2.h"
@@ -2217,4 +2217,4 @@ std::vector<Polyline<Real>> paralleOffset(Polyline<Real> const &pline, Real offs
 }
 }
 
-#endif // POLYLINE_H
+#endif // CAVC_POLYLINE_H

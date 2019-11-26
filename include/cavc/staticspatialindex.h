@@ -1,5 +1,5 @@
-#ifndef STATICSPATIALINDEX_H
-#define STATICSPATIALINDEX_H
+#ifndef CAVC_STATICSPATIALINDEX_H
+#define CAVC_STATICSPATIALINDEX_H
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -349,4 +349,4 @@ private:
 };
 }
 
-#endif // STATICSPATIALINDEX_H
+#endif // CAVC_STATICSPATIALINDEX_H

@@ -1,5 +1,5 @@
-#ifndef VECTOR_H
-#define VECTOR_H
+#ifndef CAVC_VECTOR_H
+#define CAVC_VECTOR_H
 #include "mathutils.h"
 #include <array>
 #include <cassert>
@@ -265,4 +265,4 @@ template <std::size_t N, typename Real> Real normalize(Vector<Real, N> &v) {
 }
 }
 
-#endif // VECTOR_H
+#endif // CAVC_VECTOR_H
