@@ -2216,9 +2216,9 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
 
 /// Creates the paralell offset polylines to the polyline given.
 template <typename Real>
-std::vector<Polyline<Real>> paralleOffset(Polyline<Real> const &pline, Real offset) {
+std::vector<Polyline<Real>> parallelOffset(Polyline<Real> const &pline, Real offset, bool hasSelfIntersects = false) {
   auto rawOffset = createRawOffsetPline(pline, offset);
-  if (pline.isClosed()) {
+  if (pline.isClosed() && !hasSelfIntersects) {
     auto slices = sliceAtIntersects(pline, rawOffset, offset);
     return stitchSlicesTogether(slices, pline.isClosed(), rawOffset.size() - 1);
   }
