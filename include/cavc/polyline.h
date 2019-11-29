@@ -462,7 +462,7 @@ Polyline<Real> pruneSingularities(Polyline<Real> const &pline,
     return result;
   }
 
-  // allocate up front (most of the time the number of repeated positions 0 or much less than the
+  // allocate up front (most of the time the number of repeated positions are much less than the
   // total number of vertexes so we're not using very much more memory than required)
   result.vertexes().reserve(pline.size());
 
@@ -689,7 +689,7 @@ Real bulgeForConnection(Vector2<Real> const &arcCenter, Vector2<Real> const &sp,
 
 template <typename Real>
 void lineToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> const &s2,
-                    Polyline<Real> &result) {
+                    bool connectionArcsAreCCW, Polyline<Real> &result) {
   const auto &v1 = s1.v1;
   const auto &v2 = s1.v2;
   const auto &u1 = s2.v1;
@@ -700,8 +700,7 @@ void lineToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real>
     auto const &arcCenter = s1.origV2Pos;
     auto const &sp = v2.pos();
     auto const &ep = u1.pos();
-    const bool isCCW = isLeftOrCoincident(v1.pos(), v2.pos(), arcCenter);
-    Real bulge = bulgeForConnection(arcCenter, sp, ep, isCCW);
+    Real bulge = bulgeForConnection(arcCenter, sp, ep, connectionArcsAreCCW);
     addOrReplaceIfSamePos(result, PlineVertex<Real>(sp, bulge));
     addOrReplaceIfSamePos(result, PlineVertex<Real>(ep, Real(0)));
   };
@@ -739,7 +738,7 @@ void lineToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real>
 
 template <typename Real>
 void lineToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> const &s2,
-                   Polyline<Real> &result) {
+                   bool connectionArcsAreCCW, Polyline<Real> &result) {
 
   const auto &v1 = s1.v1;
   const auto &v2 = s1.v2;
@@ -752,8 +751,7 @@ void lineToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
     auto const &arcCenter = s1.origV2Pos;
     auto const &sp = v2.pos();
     auto const &ep = u1.pos();
-    const bool isCCW = isLeftOrCoincident(v1.pos(), v2.pos(), arcCenter);
-    Real bulge = bulgeForConnection(arcCenter, sp, ep, isCCW);
+    Real bulge = bulgeForConnection(arcCenter, sp, ep, connectionArcsAreCCW);
     addOrReplaceIfSamePos(result, PlineVertex<Real>(sp, bulge));
     addOrReplaceIfSamePos(result, u1);
   };
@@ -811,7 +809,7 @@ void lineToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
 
 template <typename Real>
 void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> const &s2,
-                   Polyline<Real> &result) {
+                   bool connectionArcsAreCCW, Polyline<Real> &result) {
 
   const auto &v1 = s1.v1;
   const auto &v2 = s1.v2;
@@ -824,8 +822,7 @@ void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
     auto const &arcCenter = s1.origV2Pos;
     auto const &sp = v2.pos();
     auto const &ep = u1.pos();
-    const bool isCCW = isLeftOrCoincident(u1.pos(), u2.pos(), arcCenter);
-    Real bulge = bulgeForConnection(arcCenter, sp, ep, isCCW);
+    Real bulge = bulgeForConnection(arcCenter, sp, ep, connectionArcsAreCCW);
     addOrReplaceIfSamePos(result, PlineVertex<Real>(sp, bulge));
     addOrReplaceIfSamePos(result, u1);
   };
@@ -881,7 +878,7 @@ void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
 
 template <typename Real>
 void arcToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> const &s2,
-                  Polyline<Real> &result) {
+                  bool connectionArcsAreCCW, Polyline<Real> &result) {
 
   const auto &v1 = s1.v1;
   const auto &v2 = s1.v2;
@@ -896,9 +893,7 @@ void arcToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> c
     auto const &arcCenter = s1.origV2Pos;
     auto const &sp = v2.pos();
     auto const &ep = u1.pos();
-    auto const arc1EndPointTangentV = arcTangentVector(arc1.center, v1.bulge() > Real(0), v2.pos());
-    const bool isCCW = isLeftOrCoincident(v2.pos(), v2.pos() + arc1EndPointTangentV, arcCenter);
-    Real bulge = bulgeForConnection(arcCenter, sp, ep, isCCW);
+    Real bulge = bulgeForConnection(arcCenter, sp, ep, connectionArcsAreCCW);
     addOrReplaceIfSamePos(result, PlineVertex<Real>(sp, bulge));
     addOrReplaceIfSamePos(result, u1);
   };
@@ -1166,14 +1161,19 @@ IntrPlineSegsResult<Real> intrPlineSegs(PlineVertex<Real> const &v1, PlineVertex
 }
 
 template <typename Real>
-void offsetCircleIntersectsWithPline(Polyline<Real> const &pline, Real circleRadius,
+void offsetCircleIntersectsWithPline(Polyline<Real> const &pline, Real offset,
                                      Vector2<Real> const &circleCenter,
                                      StaticSpatialIndex<Real> const &spatialIndex,
                                      std::vector<std::pair<std::size_t, Vector2<Real>>> &output) {
+
+  const Real circleRadius = std::abs(offset);
+
   std::vector<std::size_t> queryResults;
+
   spatialIndex.query(circleCenter.x() - circleRadius, circleCenter.y() - circleRadius,
                      circleCenter.x() + circleRadius, circleCenter.y() + circleRadius,
                      queryResults);
+
   auto validLineSegIntersect = [](Real t) {
     return !falseIntersect(t) && std::abs(t) > utils::realPrecision<Real>;
   };
@@ -1271,18 +1271,21 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
     return result;
   }
 
-  auto joinResultVisitor = [](PlineOffsetSegment<Real> const &s1,
-                              PlineOffsetSegment<Real> const &s2, Polyline<Real> &result) {
+  const bool connectionArcsAreCCW = offset < Real(0);
+
+  auto joinResultVisitor = [connectionArcsAreCCW](PlineOffsetSegment<Real> const &s1,
+                                                  PlineOffsetSegment<Real> const &s2,
+                                                  Polyline<Real> &result) {
     const bool s1IsLine = s1.v1.bulgeIsZero();
     const bool s2IsLine = s2.v1.bulgeIsZero();
     if (s1IsLine && s2IsLine) {
-      detail::lineToLineJoin(s1, s2, result);
+      detail::lineToLineJoin(s1, s2, connectionArcsAreCCW, result);
     } else if (s1IsLine) {
-      detail::lineToArcJoin(s1, s2, result);
+      detail::lineToArcJoin(s1, s2, connectionArcsAreCCW, result);
     } else if (s2IsLine) {
-      detail::arcToLineJoin(s1, s2, result);
+      detail::arcToLineJoin(s1, s2, connectionArcsAreCCW, result);
     } else {
-      detail::arcToArcJoin(s1, s2, result);
+      detail::arcToArcJoin(s1, s2, connectionArcsAreCCW, result);
     }
   };
 
@@ -2216,14 +2219,15 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
 
 /// Creates the paralell offset polylines to the polyline given.
 template <typename Real>
-std::vector<Polyline<Real>> parallelOffset(Polyline<Real> const &pline, Real offset, bool hasSelfIntersects = false) {
+std::vector<Polyline<Real>> parallelOffset(Polyline<Real> const &pline, Real offset,
+                                           bool hasSelfIntersects = false) {
   auto rawOffset = createRawOffsetPline(pline, offset);
   if (pline.isClosed() && !hasSelfIntersects) {
     auto slices = sliceAtIntersects(pline, rawOffset, offset);
     return stitchSlicesTogether(slices, pline.isClosed(), rawOffset.size() - 1);
   }
 
-  // not closed polyline, must apply dual clipping
+  // not closed polyline or has self intersects, must apply dual clipping
   auto dualRawOffset = createRawOffsetPline(pline, -offset);
   auto slices = dualSliceAtIntersects(pline, rawOffset, dualRawOffset, offset);
   return stitchSlicesTogether(slices, pline.isClosed(), rawOffset.size() - 1);
