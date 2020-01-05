@@ -3,6 +3,32 @@ C++ header only library for offsetting open and closed 2D curves. Supports polyl
 
 <img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example1.png" width="400"/> <img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example2.png" width="400"/>
 
+# Table of Contents
+- [Summary](#summary)
+- [Table of Contents](#table-of-contents)
+- [Quick Code Example](#quick-code-example)
+- [Polyline Structure](#polyline-structure)
+- [Algorithm and Stepwise Example](#algorithm-and-stepwise-example)
+  - [Original input polyline, pline in blue, vertexes in red](#original-input-polyline-pline-in-blue-vertexes-in-red)
+  - [Raw offset segments generated in purple (Step 1)](#raw-offset-segments-generated-in-purple-step-1)
+  - [Raw offset polyline created from raw offset segments, pline1 (in green) (Step 2)](#raw-offset-polyline-created-from-raw-offset-segments-pline1-in-green-step-2)
+  - [Raw offset polyline self intersects (dark cyan) (Step 4)](#raw-offset-polyline-self-intersects-dark-cyan-step-4)
+  - [Valid open polyline slices created from self intersects (in green, red, and blue) (Step 5 &amp; 6)](#valid-open-polyline-slices-created-from-self-intersects-in-green-red-and-blue-step-5-amp-6)
+  - [Open polyline slices stitched together (in red and blue) (Step 7)](#open-polyline-slices-stitched-together-in-red-and-blue-step-7)
+- [Interactively Exploring the Algorithm](#interactively-exploring-the-algorithm)
+- [Performance](#performance)
+- [Implementation Notes and Variations](#implementation-notes-and-variations)
+  - [Float Comparing and Thresholding](#float-comparing-and-thresholding)
+  - [Joining Raw Offset Segments](#joining-raw-offset-segments)
+  - [Stitching Open Polylines](#stitching-open-polylines)
+- [Development](#development)
+- [API Stability](#api-stability)
+- [Project Background](#project-background)
+- [Algorithm Complexity and 2D Spatial Indexing](#algorithm-complexity-and-2d-spatial-indexing)
+  - [Packed Hilbert R-Tree](#packed-hilbert-r-tree)
+- [References](#references)
+
+
 # Quick Code Example
 ```c++
 #include "cavc/polyline.h"
