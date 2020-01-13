@@ -1,7 +1,9 @@
 # Summary
-C++ header only library for offsetting open and closed 2D curves. Supports polylines defined by straight line and constant radius arc segments, other curves may be offset by first approximating them as a polyline.
+C++ header only library for offsetting open and closed 2D curves, including self intersecting curves. Supports polylines defined by straight line and constant radius arc segments, other curves may be offset by first approximating them as a polyline.
 
 <img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example1.png" width="400"/> <img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example2.png" width="400"/>
+
+<img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example6.png" width="400"/> <img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example7.png" width="400"/>
 
 # Table of Contents
 - [Summary](#summary)
@@ -9,11 +11,11 @@ C++ header only library for offsetting open and closed 2D curves. Supports polyl
 - [Quick Code Example](#quick-code-example)
 - [Polyline Structure](#polyline-structure)
 - [Algorithm and Stepwise Example](#algorithm-and-stepwise-example)
-  - [Original input polyline, pline in blue, vertexes in red](#original-input-polyline-pline-in-blue-vertexes-in-red)
+  - [Original input polyline, *pline* in blue, vertexes in red](#original-input-polyline-pline-in-blue-vertexes-in-red)
   - [Raw offset segments generated in purple (Step 1)](#raw-offset-segments-generated-in-purple-step-1)
-  - [Raw offset polyline created from raw offset segments, pline1 (in green) (Step 2)](#raw-offset-polyline-created-from-raw-offset-segments-pline1-in-green-step-2)
+  - [Raw offset polyline created from raw offset segments, *pline1* (in green) (Step 2)](#raw-offset-polyline-created-from-raw-offset-segments-pline1-in-green-step-2)
   - [Raw offset polyline self intersects (dark cyan) (Step 4)](#raw-offset-polyline-self-intersects-dark-cyan-step-4)
-  - [Valid open polyline slices created from self intersects (in green, red, and blue) (Step 5 &amp; 6)](#valid-open-polyline-slices-created-from-self-intersects-in-green-red-and-blue-step-5-amp-6)
+  - [Valid open polyline slices created from self intersects (in green, red, and blue) (Step 5 & 6)](#valid-open-polyline-slices-created-from-self-intersects-in-green-red-and-blue-step-5--6)
   - [Open polyline slices stitched together (in red and blue) (Step 7)](#open-polyline-slices-stitched-together-in-red-and-blue-step-7)
 - [Interactively Exploring the Algorithm](#interactively-exploring-the-algorithm)
 - [Performance](#performance)
@@ -174,9 +176,9 @@ Pull requests, feature requests/ideas, issues, and bug reports are welcome. Plea
 There is not an official release yet - all functions and structures are subject to change. The purpose of this repository for now is to serve as an implementation reference that is easy to understand and possibly transcribe to other programming languages. The code can be used as is but there is no guarantee that future development will maintain the same functions and structures. Ideas/pull requests for what a stable API interface should look like are welcome.
 
 # Project Background
-There are many papers on offsetting curves for CAD/CAM uses [[1][9][10]](#references), but there is often no reference implementation. I have found that most algorithms described are dense and difficult to reproduce. Issues such as numeric stability, how to handle coincident segments, etc. are often not mentioned and algorithmic description detail is inconsistent (e.g. it may be very clear how to perform some of the steps but other steps are quickly glossed over and it becomes unclear how to go about implementing). All of these issues would not be much of a problem if an open source reference implementation was supplied but for all the papers I have read not a single implementation was given.
+There are many papers on offsetting curves for CAD/CAM uses [[1][9][10][16]](#references), but there is often no reference implementation. I have found that most algorithms described are dense and difficult to reproduce. Issues such as numeric stability, how to handle coincident segments, etc. are often not mentioned and algorithmic description detail is inconsistent (e.g. it may be very clear how to perform some of the steps but other steps are quickly glossed over and it becomes unclear how to go about implementing). All of these issues would not be much of a problem if an open source reference implementation was supplied but for all the papers I have read not a single implementation was given.
 
-In addition to papers being difficult to use as a pragmatic tool, most papers focus on offsetting straight segment polylines or polygons (sometimes referred to as point sequence curves) [[9][10]](#references). And there are a few notable open source libraries that work only on straight segment polylines as well [[11][12][13]](#references). Unfortunately if only straight segments are supported then all curves, even simple constant radius arcs, must be approximated using straight segments, which is very inefficient due to the memory footprint required. Additionally if arcs must be reconstructed from points then that adds to the code complexity. Constant radius arcs are very common in CAD/CAM applications (tool compensation, tool offsetting for cleanout, part sizing, etc.), and arcs may be used to approximate other curves more memory efficiently than straight line segments, e.g. for Bezier curves [[14]](#references).
+In addition to papers being difficult to use as a pragmatic tool, most papers focus on offsetting straight segment polylines or polygons (sometimes referred to as point sequence curves) [[9][10][16]](#references). And there are a few notable open source libraries that work only on straight segment polylines as well [[11][12][13]](#references). Unfortunately if only straight segments are supported then all curves, even simple constant radius arcs, must be approximated using straight segments, which is very inefficient due to the memory footprint required. Additionally if arcs must be reconstructed from points then that adds to the code complexity. Constant radius arcs are very common in CAD/CAM applications (tool compensation, tool offsetting for cleanout, part sizing, etc.), and arcs may be used to approximate other curves more memory efficiently than straight line segments, e.g. for Bezier curves [[14]](#references).
 
 There are a few papers on offsetting curves with arc segments [[1][15]](#references), some involve a Voronoi diagram approach [[15]](#references) and others are more similar to the approach this library takes by processing self-intersects and applying a clipping algorithm [[1]](#references). These papers do not provide an opensource reference implementation, and many of them are difficult to understand, and even more difficult to reproduce.
 
@@ -228,3 +230,5 @@ Note that there are pathological input cases that will still result in O(n<sup>2
 [14] Bezier biarc approximating: https://github.com/domoszlai/bezier2biarc
 
 [15] Held, M., & Huber, S. (2009). Topology-oriented incremental computation of Voronoi diagrams of circular arcs and straight-line segments. Computer-Aided Design, 41(5), 327–338. doi:10.1016/j.cad.2008.08.004 
+
+[16] Kim, H.-C., Lee, S.-G., & Yang, M.-Y. (2005). A new offset algorithm for closed 2D lines with Islands. The International Journal of Advanced Manufacturing Technology, 29(11-12), 1169–1177. doi:10.1007/s00170-005-0013-1
