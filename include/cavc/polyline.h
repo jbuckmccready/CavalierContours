@@ -2135,14 +2135,14 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
 
   spatialIndex.finish();
 
-  std::unordered_set<std::size_t> visitedIndexes;
+  std::vector<bool> visitedIndexes(slices.size(), false);
   std::vector<std::size_t> queryResults;
   for (std::size_t i = 0; i < slices.size(); ++i) {
-    auto insertResult = visitedIndexes.insert(i);
-    if (!insertResult.second) {
-      // already visited
+    if (visitedIndexes[i]) {
       continue;
     }
+
+    visitedIndexes[i] = true;
 
     Polyline<Real> currPline;
     currPline.isClosed() = closedPolyline;
@@ -2161,9 +2161,7 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
                          queryResults);
 
       queryResults.erase(std::remove_if(queryResults.begin(), queryResults.end(),
-                                        [&](std::size_t index) {
-                                          return visitedIndexes.find(index) != visitedIndexes.end();
-                                        }),
+                                        [&](std::size_t index) { return visitedIndexes[index]; }),
                          queryResults.end());
 
       auto indexDistAndEqualInitial = [&](std::size_t index) {
@@ -2208,7 +2206,7 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
       }
 
       // else continue stitching
-      visitedIndexes.insert(queryResults[0]);
+      visitedIndexes[queryResults[0]] = true;
       currPline.vertexes().pop_back();
       currIndex = queryResults[0];
     }
