@@ -1,9 +1,9 @@
 # Summary
 C++ header only library for offsetting open and closed 2D curves, including self intersecting curves. Supports polylines defined by straight line and constant radius arc segments, other curves may be offset by first approximating them as a polyline.
 
-<img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example1.png" width="400"/> <img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example2.png" width="400"/>
+<img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example1.png" width="400"/> <img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example2.png" width="400"/>
 
-<img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example6.png" width="400"/> <img src="https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/pretty_examples/example7.png" width="400"/>
+<img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example6.png" width="400"/> <img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example7.png" width="400"/>
 
 # Table of Contents
 - [Summary](#summary)
@@ -97,7 +97,7 @@ input.addVertex(39, 21, 0);
 input.addVertex(28, 12, 0);
 input.isClosed() = true;
 ```
-![Input Polyline](https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/algorithm_steps/input_polyline.png)
+![Input Polyline](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/input_polyline.png)
 
 ## Raw offset segments generated in purple (Step 1)
 ```c++
@@ -105,7 +105,7 @@ input.isClosed() = true;
 double offset = 3;
 std::vector<PlineOffsetSegment<double>> rawOffsets = createUntrimmedOffsetSegments(input, offset);
 ```
-![Raw Offset Segments](https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/algorithm_steps/raw_offset_segments.png)
+![Raw Offset Segments](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/raw_offset_segments.png)
 
 ## Raw offset polyline created from raw offset segments, *pline1* (in green) (Step 2)
 
@@ -115,7 +115,7 @@ std::vector<PlineOffsetSegment<double>> rawOffsets = createUntrimmedOffsetSegmen
 // offsets done in step 1
 Polyline<double> pline1 =  createRawOffsetPline(input, offset);
 ```
-![Raw Offset Polyline](https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/algorithm_steps/raw_offset_polyline.png)
+![Raw Offset Polyline](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/raw_offset_polyline.png)
 
 ## Raw offset polyline self intersects (dark cyan) (Step 4)
 
@@ -127,7 +127,7 @@ std::vector<PlineIntersect<double>> selfIntersects;
 // selfIntersects passed by reference to be filled by allSelfIntersects
 allSelfIntersects(pline1, selfIntersects, rawOffsetPlineSpatialIndex);
 ```
-![Raw Offset Polyline Intersects](https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/algorithm_steps/raw_offset_polyline_intersects.png)
+![Raw Offset Polyline Intersects](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/raw_offset_polyline_intersects.png)
 
 ## Valid open polyline slices created from self intersects (in green, red, and blue) (Step 5 & 6)
 
@@ -137,7 +137,7 @@ allSelfIntersects(pline1, selfIntersects, rawOffsetPlineSpatialIndex);
 // and discarding invalid slices in step 6
 std::vector<OpenPolylineSlice<double>> slices = sliceAtIntersects(input, pline1, offset);
 ```
-![Valid Slices](https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/algorithm_steps/valid_slices.png)
+![Valid Slices](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/valid_slices.png)
 
 ## Open polyline slices stitched together (in red and blue) (Step 7)
 
@@ -146,7 +146,7 @@ std::vector<OpenPolylineSlice<double>> slices = sliceAtIntersects(input, pline1,
 std::size_t origMaxIndex = pline1.size() - 1;
 std::vector<Polyline<double>> finalResult = stitchSlicesTogether(slices, input.isClosed(), origMaxIndex)
 ```
-![Final Output Polylines](https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/algorithm_steps/output.png)
+![Final Output Polylines](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/output.png)
 
 
 # Interactively Exploring the Algorithm
@@ -192,7 +192,7 @@ The approach used by this library is to use a packed Hilbert R-Tree [[3]](#refer
 ## Packed Hilbert R-Tree
 Here is an image of a closed polyline approximating a circle using 100 line segments (blue lines and red vertexes) with spatial index bounding boxes made visible (magenta, orange, and light green boxes). The root of the R-Tree is the light green box, its children are the orange boxes, and its grand children are the magenta boxes.
 
-![Simple Spatial Index](https://raw.githubusercontent.com/CavalierContours/DocumentationResources/master/images/spatial_index/simple_example.png)
+![Simple Spatial Index](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/spatial_index/simple_example.png)
 
 The packed Hilbert R-Tree is very fast to build and query, but requires rebuilding the tree anytime the data changes – however for computational geometry algorithms such as those performed in this library we start with no indexed data and our data does not change for the duration of the algorithm, making the tradeoff ideal for the use case.
 
