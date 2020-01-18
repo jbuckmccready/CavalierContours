@@ -25,7 +25,7 @@ C++ header only library for offsetting open and closed 2D curves, including self
   - [Stitching Open Polylines](#stitching-open-polylines)
 - [Development](#development)
 - [API Stability](#api-stability)
-- [Project Background](#project-background)
+- [Project Motivation and Goal](#project-motivation-and-goal)
 - [Algorithm Complexity and 2D Spatial Indexing](#algorithm-complexity-and-2d-spatial-indexing)
   - [Packed Hilbert R-Tree](#packed-hilbert-r-tree)
 - [References](#references)
@@ -175,8 +175,8 @@ Pull requests, feature requests/ideas, issues, and bug reports are welcome. Plea
 # API Stability
 There is not an official release yet - all functions and structures are subject to change. The purpose of this repository for now is to serve as an implementation reference that is easy to understand and possibly transcribe to other programming languages. The code can be used as is but there is no guarantee that future development will maintain the same functions and structures. Ideas/pull requests for what a stable API interface should look like are welcome.
 
-# Project Background
-There are many papers on offsetting curves for CAD/CAM uses [[1][9][10][16]](#references), but there is often no reference implementation. I have found that most algorithms described are dense and difficult to reproduce. Issues such as numeric stability, how to handle coincident segments, etc. are often not mentioned and algorithmic description detail is inconsistent (e.g. it may be very clear how to perform some of the steps but other steps are quickly glossed over and it becomes unclear how to go about implementing). All of these issues would not be much of a problem if an open source reference implementation was supplied but for all the papers I have read not a single implementation was given.
+# Project Motivation and Goal
+I set out to generate tool compensated milling tool paths for profile cuts, in the process I found there are many papers on offsetting curves for CAD/CAM uses [[1][9][10][16]](#references), but there is often no reference implementation. I have found that most algorithms described are dense and difficult to reproduce. Issues such as numeric stability, how to handle coincident segments, etc. are often not mentioned and algorithmic description detail is inconsistent (e.g. it may be very clear how to perform some of the steps but other steps are quickly glossed over and it becomes unclear how to go about implementing). All of these issues would not be much of a problem if an open source reference implementation was supplied but for all the papers I have read not a single implementation was given.
 
 In addition to papers being difficult to use as a pragmatic tool, most papers focus on offsetting straight segment polylines or polygons (sometimes referred to as point sequence curves) [[9][10][16]](#references). And there are a few notable open source libraries that work only on straight segment polylines as well [[11][12][13]](#references). Unfortunately if only straight segments are supported then all curves, even simple constant radius arcs, must be approximated using straight segments, which is very inefficient due to the memory footprint required. Additionally if arcs must be reconstructed from points then that adds to the code complexity. Constant radius arcs are very common in CAD/CAM applications (tool compensation, tool offsetting for cleanout, part sizing, etc.), and arcs may be used to approximate other curves more memory efficiently than straight line segments, e.g. for Bezier curves [[14]](#references).
 
