@@ -1,5 +1,5 @@
 # Summary
-C++ header only library for offsetting open and closed 2D curves, including self intersecting curves. Supports polylines defined by straight line and constant radius arc segments, other curves may be offset by first approximating them as a polyline. For interactive UI and development go to the development project [CavalierContoursDev](https://github.com/jbuckmccready/CavalierContoursDev).
+C++14 header only library for offsetting open and closed 2D curves, including self intersecting curves. Supports polylines defined by straight line and constant radius arc segments, other curves may be offset by first approximating them as a polyline. For interactive UI and development go to the development project [CavalierContoursDev](https://github.com/jbuckmccready/CavalierContoursDev).
 
 <img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example1.png" width="400"/> <img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example2.png" width="400"/>
 
