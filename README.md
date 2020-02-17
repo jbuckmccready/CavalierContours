@@ -20,6 +20,8 @@ C++14 header only library for offsetting open and closed 2D curves, including se
 - [Interactively Exploring the Algorithm](#interactively-exploring-the-algorithm)
 - [Performance](#performance)
   - [Benchmarks](#benchmarks)
+    - [CavalierContours (Arcs Approximated) vs. Clipper](#cavaliercontours-arcs-approximated-vs-clipper)
+    - [CavalierContours (Arcs Included) vs. Clipper](#cavaliercontours-arcs-included-vs-clipper)
 - [Implementation Notes and Variations](#implementation-notes-and-variations)
   - [Float Comparing and Thresholding](#float-comparing-and-thresholding)
   - [Joining Raw Offset Segments](#joining-raw-offset-segments)
@@ -159,35 +161,88 @@ The implementation is not entirely geared around performance but some profiling 
 Additionally the structures and control flow are factored for readability/maintainability and may be limiting how much is compiled to simd instructions.
 
 ## Benchmarks
-The following is a series of benchmarks that were run on windows 10 64 bit with an i7 6700k @ 4.00Ghz, code was built using MSVC 2019 compiler version 19.24.28314 targeting 64 bit (similar results were found using MingGW 7.3 64 bit). Each benchmark profile has different characteristics, and each profile is repeatedly offset both positively and negatively with increasing delta.
+The following is a series of benchmarks that were run on windows 10 64 bit with an i7 6700k @ 4.00Ghz, code was built using MSVC 2019 compiler version 19.24.28314 targeting 64 bit (similar results were found using MingGW 7.3 64 bit). Each benchmark profile has different characteristics, and each profile is repeatedly offset both inward and outward with increasing delta.
 
-All offsets were performed with rounded joins (maintaining exact offset distance from original input), and 1e8 was used to scale the double inputs into 64 bit integers for input into the Clipper library (but scaling and copying is not included in the benchmarks to avoid penalizing Clipper). Offsets are always computed from the original input (not from previous offset results) to avoid the explosion of vertexes that results from rounded joins approximated by line segments created by Clipper.
+All offsets were performed with rounded joins (maintaining exact offset distance from original input), and 1e8 was used to scale the double inputs into 64 bit integers for input into the Clipper library (but scaling and copying is not included in the benchmarks to avoid penalizing Clipper). Offsets are always computed from the original input (not from previous offset results) to avoid the explosion of vertexes from rounded joins approximated by line segments created by Clipper.
 
-- BM_Profile1/N is a circle approximated by N straight line segments (no arcs involved, so no input arcs need to be approximated as line segments for Clipper).
-- BM_Profile2 is a small closed polygon with 4 arcs and 2 line segments.
-- BM_Profile3 is a slightly larger closed polygon with 7 arcs and 4 line segments.
-- BM_PathologicalProfile1/N is the same as Profile1/N but each line segment is replaced with a half circle arc alternating clockwise and counter clockwise. This is a pathological input for 2d bounding box spatial indexing (as the offset delta increases all of the raw offset segments bounding boxes start to overlap, and all of the segments start to intersect). 
+- BM_square is a simple square with 4 edges.
+- BM_circle is a simple circle defined by two vertexes with bulge = 1 (half circle arcs).
+- BM_roundedRectangle is a rectangle with corner radii.
+- BM_Profile1 is a small closed polygon with 4 arcs and 2 line segments.
+- BM_Profile2 is a slightly larger closed polygon with 7 arcs and 4 line segments.
+- BM_PathologicalProfile1/N is a circle whose perimeter is composed of half circle arcs alternating clockwise and counter clockwise. N is the number of half circles that make up the perimeter. This is a pathological input for 2d bounding box spatial indexing: as the offset delta increases all of the raw offset segment's bounding boxes start to overlap, and all of the segments start to intersect.
 
-Exact details of the benchmark profiles and offsets run can be found under the dev project [here](https://github.com/jbuckmccready/CavalierContoursDev). For more on the clipper library see [[11]](#references).
+1e-2 (0.01) and 1e-3 (0.001) at the end of "arcs approx." refers to the error when approximating an arc as a series of line segments, it is the maximum allowed distance between the approximating line segments and the original arc. Note the profile vertex distances are in the range of 0-50 so the 1e-2 (0.01) error is intolerable for many applications, but significantly cuts down on the number of generated segments.
 
-| benchmark                   | cavc (ms) | clipper 1e-2 (ms) | clipper 1e-3 (ms) | cavc vs. clipper 1e-2 | cavc vs. clipper 1e-3 | 
-|-----------------------------|-----------|-------------------|-------------------|-----------------------|-----------------------| 
-| BM_Profile1/8               | **3.72**      | 7.99              | 17.74             | **2.15x**                 | **4.77x**                 | 
-| BM_Profile1/32              | **15.80**     | 16.59             | 24.97             | **1.05x**                 | **1.58x**                 | 
-| BM_Profile1/256             | 179.58    | 154.69            | **148.11**            | 0.86x                 | 0.82x                 | 
-| BM_Profile1/1024            | **1145.17**   | 2133.65           | 2097.16           | **1.86x**                 | **1.83x**                 | 
-| BM_Profile2                 | **0.72**      | 6.33              | 24.53             | **8.80x**                 | **34.13x**                | 
-| BM_Profile3                 | **1.78**      | 16.76             | 75.51             | **9.40x**                 | **42.35x**                | 
-| BM_PathologicalProfile1/10  | **1.83**      | 137.86            | 1432.07           | **75.16x**                | **780.80x**               | 
-| BM_PathologicalProfile1/25  | **7.78**      | 247.01            | 2917.48           | **31.74x**                | **374.86x**               | 
-| BM_PathologicalProfile1/50  | **25.35**     | 531.27            | 6312.05           | **20.95x**                | **248.95x**               | 
-| BM_PathologicalProfile1/100 | **90.82**     | 1335.83           | 15834.80          | **14.71x**                | **174.36x**               | 
+| benchmark                   | vertex count | arcs approx. 1e-2 vertex count | arcs approx. 1e-3 vertex count | 
+|-----------------------------|--------------|--------------------------------|--------------------------------| 
+| BM_square                   | 4            | 4                              | 4                              | 
+| BM_circle                   | 2            | 142                            | 446                            | 
+| BM_roundedRectangle         | 8            | 56                             | 164                            | 
+| BM_Profile1                 | 6            | 80                             | 241                            | 
+| BM_Profile2                 | 11           | 162                            | 494                            | 
+| BM_PathologicalProfile1/10  | 10           | 400                            | 1240                           | 
+| BM_PathologicalProfile1/25  | 25           | 625                            | 1975                           | 
+| BM_PathologicalProfile1/50  | 50           | 900                            | 2800                           | 
+| BM_PathologicalProfile1/100 | 100          | 1300                           | 4000                           | 
 
-* **cavc (ms)**: Time taken by CavalierContours to complete test profile in milliseconds.
-* **clipper 1e-2 (ms)** and **clipper 1e-3 (ms)**: Time taken by Clipper to complete test profile in milliseconds with arcs approximated as line segments with no more than 0.01 (1e-2) or 0.001 (1e-3) distance from the original arc, this value was used for constructing the rounded joins as well (note: profiles vertex distances are in the range of 0-50).
-* **cavc vs. clipper 1e-2** and **cavc vs. clipper 1e-3**: CavalierContours speed relative to Clipper, e.g. if 2.0x then CavalierContours was twice as fast as Clipper.
+All times are wall time. Exact details of the benchmark profiles and offsets run can be found under the dev project [here](https://github.com/jbuckmccready/CavalierContoursDev). For more on the clipper library see [[11]](#references).
 
-Benchmarks that ran faster were repeated and times were averaged. I am not sure why for BM_Profile1/256 and BM_Profile1/1024 the clipper 1e-3 is faster than clipper 1e-2 but it is not an aberration and is observed after repeated runs.
+### CavalierContours (Arcs Approximated) vs. Clipper
+
+| benchmark                   | cavc arcs approx. 1e-2 (ms) | clipper arcs approx. 1e-2 (ms) | cavc vs. clipper | 
+|-----------------------------|-----------------------------|--------------------------------|------------------| 
+| BM_square                   | **0.21**                    | 0.72                           | 3.5x             | 
+| BM_circle                   | **9.11**                    | 9.47                           | 1.0x             | 
+| BM_roundedRectangle         | **3.92**                    | 8.46                           | 2.2x             | 
+| BM_Profile1                 | 8.55                        | **6.33**                       | 0.7x             | 
+| BM_Profile2                 | 17.57                       | **16.59**                      | 0.9x             | 
+| BM_PathologicalProfile1/10  | **34.97**                   | 136.46                         | 3.9x             | 
+| BM_PathologicalProfile1/25  | **70.93**                   | 241.95                         | 3.4x             | 
+| BM_PathologicalProfile1/50  | **138.17**                  | 514.95                         | 3.7x             | 
+| BM_PathologicalProfile1/100 | **336.37**                  | 1347.09                        | 4.0x             | 
+
+| benchmark                   | cavc arcs approx. 1e-3 (ms) | clipper arcs approx. 1e-3 (ms) | cavc vs. clipper | 
+|-----------------------------|-----------------------------|--------------------------------|------------------| 
+| BM_square                   | **0.21**                    | 1.71                           | 8.1x             | 
+| BM_circle                   | **38.04**                   | 61.37                          | 1.6x             | 
+| BM_roundedRectangle         | **13.14**                   | 61.61                          | 4.7x             | 
+| BM_Profile1                 | 27.07                       | **24.44**                      | 0.9x             | 
+| BM_Profile2                 | **52.64**                   | 73.64                          | 1.4x             | 
+| BM_PathologicalProfile1/10  | **109.96**                  | 1383.46                        | 12.6x            | 
+| BM_PathologicalProfile1/25  | **227.51**                  | 2824.67                        | 12.4x            | 
+| BM_PathologicalProfile1/50  | **385.46**                  | 6170.26                        | 16.0x            | 
+| BM_PathologicalProfile1/100 | **821.15**                  | 15797.60                       | 19.2x            | 
+
+The above benchmarks were taken by converting all arcs to line segments before running the profile through the offsetting algorithm. Even with no arcs in the input CavalierContours is competitive with a noticeable speedup in many cases. This is in part due to CavalierContours not having to construct rounded joins from line segments (an exact arc can be constructed instead).
+
+### CavalierContours (Arcs Included) vs. Clipper
+
+| benchmark                   | cavc w/ arcs (ms) | clipper arcs approx. 1e-2 (ms) | cavc vs. clipper | 
+|-----------------------------|-------------------|--------------------------------|------------------| 
+| BM_square                   | **0.21**          | 0.72                           | 3.4x             | 
+| BM_circle                   | **0.12**          | 9.47                           | 76.4x            | 
+| BM_roundedRectangle         | **0.49**          | 8.46                           | 17.3x            | 
+| BM_Profile1                 | **0.76**          | 6.33                           | 8.4x             | 
+| BM_Profile2                 | **1.55**          | 16.59                          | 10.7x            | 
+| BM_PathologicalProfile1/10  | **1.61**          | 136.46                         | 84.9x            | 
+| BM_PathologicalProfile1/25  | **7.17**          | 241.95                         | 33.8x            | 
+| BM_PathologicalProfile1/50  | **23.98**         | 514.95                         | 21.5x            | 
+| BM_PathologicalProfile1/100 | **85.10**         | 1347.09                        | 15.8x            | 
+
+| benchmark                   | cavc w/ arcs (ms) | clipper arcs approx. 1e-3 (ms) | cavc vs. clipper | 
+|-----------------------------|-------------------|--------------------------------|------------------| 
+| BM_square                   | **0.21**          | 1.71                           | 8.1x             | 
+| BM_circle                   | **0.12**          | 61.37                          | 494.7x           | 
+| BM_roundedRectangle         | **0.49**          | 61.61                          | 126.1x           | 
+| BM_Profile1                 | **0.76**          | 24.44                          | 32.3x            | 
+| BM_Profile2                 | **1.55**          | 73.64                          | 47.6x            | 
+| BM_PathologicalProfile1/10  | **1.61**          | 1383.46                        | 861.0x           | 
+| BM_PathologicalProfile1/25  | **7.17**          | 2824.67                        | 394.2x           | 
+| BM_PathologicalProfile1/50  | **23.98**         | 6170.26                        | 257.3x           | 
+| BM_PathologicalProfile1/100 | **85.10**         | 15797.60                       | 185.6x           | 
+
+The above benchmarks compare CavalierContours taking in the original input (arcs included) vs. Clipper (arcs must be approximated). The performance benefits of processing the arcs directly is quickly realized.
 
 # Implementation Notes and Variations
 ## Float Comparing and Thresholding
