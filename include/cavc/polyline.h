@@ -307,16 +307,64 @@ ClosestPointAndIndex<Real> closestPointAndIndex(Polyline<Real> const &pline,
     return result;
   }
 
+  result.distance = std::numeric_limits<Real>::infinity();
+
   auto visitor = [&](std::size_t i, std::size_t j) {
     Vector2<Real> cp = closestPointOnSeg(pline[i], pline[j], point);
-    Real dist = length(point - cp);
-    if (dist < result.distance) {
+    auto diffVec = point - cp;
+    Real dist2 = dot(diffVec, diffVec);
+    if (dist2 < result.distance) {
       result.index = i;
       result.point = cp;
-      result.distance = dist;
+      result.distance = dist2;
     }
 
     // iterate all segments
+    return true;
+  };
+
+  iterateSegIndices(pline, visitor);
+  // we used the squared distance while iterating and comparing, take sqrt for actual distance
+  result.distance = std::sqrt(result.distance);
+  return result;
+}
+
+/// Returns a new polyline with all arc segments converted to line segments, error is the maximum
+/// distance from any line segment to the arc it is approximating. Line segments are circumscribed
+/// by the arc (all end points lie on the arc path).
+template <typename Real>
+Polyline<Real> convertArcsToLines(Polyline<Real> const &pline, Real error) {
+  cavc::Polyline<Real> result;
+  result.isClosed() = pline.isClosed();
+  auto visitor = [&](std::size_t i, std::size_t j) {
+    const auto &v1 = pline[i];
+    const auto &v2 = pline[j];
+    if (v1.bulgeIsZero()) {
+      result.addVertex(v1);
+    } else {
+
+      auto arc = arcRadiusAndCenter(v1, v2);
+      auto startAngle = angle(arc.center, v1.pos());
+      auto endAngle = angle(arc.center, v2.pos());
+      Real deltaAngle = std::abs(cavc::utils::deltaAngle(startAngle, endAngle));
+
+      error = std::abs(error);
+      Real segmentSubAngle = std::abs(Real(2) * std::acos(Real(1) - error / arc.radius));
+      std::size_t segmentCount = static_cast<std::size_t>(std::ceil(deltaAngle / segmentSubAngle));
+
+      if (v1.bulge() < Real(0)) {
+        segmentSubAngle = -segmentSubAngle;
+      }
+      // add the start point
+      result.addVertex(v1.x(), v1.y(), 0.0);
+      // add the remaining points (note not adding final point, that's the next vertex)
+      for (std::size_t i = 1; i < segmentCount; ++i) {
+        Real angle = i * segmentSubAngle + startAngle;
+        result.addVertex(arc.radius * std::cos(angle) + arc.center.x(),
+                         arc.radius * std::sin(angle) + arc.center.y(), 0);
+      }
+    }
+
     return true;
   };
 
