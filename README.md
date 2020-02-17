@@ -19,6 +19,7 @@ C++14 header only library for offsetting open and closed 2D curves, including se
   - [Open polyline slices stitched together (in red and blue) (Step 7)](#open-polyline-slices-stitched-together-in-red-and-blue-step-7)
 - [Interactively Exploring the Algorithm](#interactively-exploring-the-algorithm)
 - [Performance](#performance)
+  - [Benchmarks](#benchmarks)
 - [Implementation Notes and Variations](#implementation-notes-and-variations)
   - [Float Comparing and Thresholding](#float-comparing-and-thresholding)
   - [Joining Raw Offset Segments](#joining-raw-offset-segments)
@@ -157,6 +158,37 @@ The implementation is not entirely geared around performance but some profiling 
 
 Additionally the structures and control flow are factored for readability/maintainability and may be limiting how much is compiled to simd instructions.
 
+## Benchmarks
+The following is a series of benchmarks that were run on windows 10 64 bit with an i7 6700k @ 4.00Ghz, code was built using MSVC 2019 compiler version 19.24.28314 targeting 64 bit (similar results were found using MingGW 7.3 64 bit). Each benchmark profile has different characteristics, and each profile is repeatedly offset both positively and negatively with increasing delta.
+
+All offsets were performed with rounded joins (maintaining exact offset distance from original input), and 1e8 was used to scale the double inputs into 64 bit integers for input into the Clipper library (but scaling and copying is not included in the benchmarks to avoid penalizing Clipper). Offsets are always computed from the original input (not from previous offset results) to avoid the explosion of vertexes that results from rounded joins approximated by line segments created by Clipper.
+
+- BM_Profile1/N is a circle approximated by N straight line segments (no arcs involved, so no input arcs need to be approximated as line segments for Clipper).
+- BM_Profile2 is a small closed polygon with 4 arcs and 2 line segments.
+- BM_Profile3 is a slightly larger closed polygon with 7 arcs and 4 line segments.
+- BM_PathologicalProfile1/N is the same as Profile1/N but each line segment is replaced with a half circle arc alternating clockwise and counter clockwise. This is a pathological input for 2d bounding box spatial indexing (as the offset delta increases all of the raw offset segments bounding boxes start to overlap, and all of the segments start to intersect). 
+
+Exact details of the benchmark profiles and offsets run can be found under the dev project [here](https://github.com/jbuckmccready/CavalierContoursDev). For more on the clipper library see [[11]](#references).
+
+| benchmark                   | cavc (ms) | clipper 1e-2 (ms) | clipper 1e-3 (ms) | cavc vs. clipper 1e-2 | cavc vs. clipper 1e-3 | 
+|-----------------------------|-----------|-------------------|-------------------|-----------------------|-----------------------| 
+| BM_Profile1/8               | **3.72**      | 7.99              | 17.74             | **2.15x**                 | **4.77x**                 | 
+| BM_Profile1/32              | **15.80**     | 16.59             | 24.97             | **1.05x**                 | **1.58x**                 | 
+| BM_Profile1/256             | 179.58    | 154.69            | **148.11**            | 0.86x                 | 0.82x                 | 
+| BM_Profile1/1024            | **1145.17**   | 2133.65           | 2097.16           | **1.86x**                 | **1.83x**                 | 
+| BM_Profile2                 | **0.72**      | 6.33              | 24.53             | **8.80x**                 | **34.13x**                | 
+| BM_Profile3                 | **1.78**      | 16.76             | 75.51             | **9.40x**                 | **42.35x**                | 
+| BM_PathologicalProfile1/10  | **1.83**      | 137.86            | 1432.07           | **75.16x**                | **780.80x**               | 
+| BM_PathologicalProfile1/25  | **7.78**      | 247.01            | 2917.48           | **31.74x**                | **374.86x**               | 
+| BM_PathologicalProfile1/50  | **25.35**     | 531.27            | 6312.05           | **20.95x**                | **248.95x**               | 
+| BM_PathologicalProfile1/100 | **90.82**     | 1335.83           | 15834.80          | **14.71x**                | **174.36x**               | 
+
+* **cavc (ms)**: Time taken by CavalierContours to complete test profile in milliseconds.
+* **clipper 1e-2 (ms)** and **clipper 1e-3 (ms)**: Time taken by Clipper to complete test profile in milliseconds with arcs approximated as line segments with no more than 0.01 (1e-2) or 0.001 (1e-3) distance from the original arc, this value was used for constructing the rounded joins as well (note: profiles vertex distances are in the range of 0-50).
+* **cavc vs. clipper 1e-2** and **cavc vs. clipper 1e-3**: CavalierContours speed relative to Clipper, e.g. if 2.0x then CavalierContours was twice as fast as Clipper.
+
+Benchmarks that ran faster were repeated and times were averaged. I am not sure why for BM_Profile1/256 and BM_Profile1/1024 the clipper 1e-3 is faster than clipper 1e-2 but it is not an aberration and is observed after repeated runs.
+
 # Implementation Notes and Variations
 ## Float Comparing and Thresholding
 When comparing two float values for equality, `a` and `b`, this implementation uses a simple fuzzy comparing method of `abs(a - b) < epsilon`, where `epsilon` is a very small number, e.g. 1e-8 or 1e-5 depending on the context. These numbers were picked through anecdotal use case trial/error where input values are typically between 0.1 and 1000.0. If finer comparisons are required, or if the input values get quite large or small then numerical stability issues may arise and the means of fuzzy comparing will need to be adjusted. See [mathutils.h](include/cavc/mathutils.h) for c++ implementation.
@@ -221,7 +253,7 @@ Note that there are pathological input cases that will still result in O(n<sup>2
 
 [10] Kim, D.-S. (1998). Polygon offsetting using a Voronoi diagram and two stacks. Computer-Aided Design, 30(14), 1069–1076. doi:10.1016/s0010-4485(98)00063-3
 
-[11] Clipper library: http://www.angusj.com/delphi/clipper.php
+[11] Clipper library: http://www.angusj.com/delphi/clipper.php (github fork here: https://github.com/jbuckmccready/clipper-lib)
 
 [12] CGAL library for offsetting polylines: https://doc.cgal.org/latest/Straight_skeleton_2/index.html
 
