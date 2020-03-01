@@ -351,13 +351,15 @@ Polyline<Real> convertArcsToLines(Polyline<Real> const &pline, Real error) {
       error = std::abs(error);
       Real segmentSubAngle = std::abs(Real(2) * std::acos(Real(1) - error / arc.radius));
       std::size_t segmentCount = static_cast<std::size_t>(std::ceil(deltaAngle / segmentSubAngle));
+      // update segment subangle for equal length segments
+      segmentSubAngle = deltaAngle / segmentCount;
 
       if (v1.bulge() < Real(0)) {
         segmentSubAngle = -segmentSubAngle;
       }
       // add the start point
       result.addVertex(v1.x(), v1.y(), 0.0);
-      // add the remaining points (note not adding final point, that's the next vertex)
+      // add the remaining points
       for (std::size_t i = 1; i < segmentCount; ++i) {
         Real angle = i * segmentSubAngle + startAngle;
         result.addVertex(arc.radius * std::cos(angle) + arc.center.x(),
@@ -369,6 +371,9 @@ Polyline<Real> convertArcsToLines(Polyline<Real> const &pline, Real error) {
   };
 
   iterateSegIndices(pline, visitor);
+  if (!pline.isClosed()) {
+    result.addVertex(pline.lastVertex());
+  }
 
   return result;
 }
