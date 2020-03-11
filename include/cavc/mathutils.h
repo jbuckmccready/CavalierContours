@@ -21,12 +21,13 @@ template <typename Real> bool fuzzyEqual(Real x, Real y, Real epsilon = realThre
   return std::abs(x - y) < epsilon;
 }
 
+template <typename Real>
+bool fuzzyInRange(Real minValue, Real value, Real maxValue, Real epsilon = realThreshold<Real>) {
+  return (value + epsilon > minValue) && (value < maxValue + epsilon);
+}
+
 /// Normalize radius to be between 0 and 2PI, e.g. -PI/4 becomes 7PI/8 and 5PI becomes PI.
 template <typename Real> Real normalizeRadians(Real angle) {
-  if (std::abs(angle - tau<Real>) < Real(0)) {
-    return Real(0);
-  }
-
   if (angle >= Real(0) && angle <= tau<Real>) {
     return angle;
   }

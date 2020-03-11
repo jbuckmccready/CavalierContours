@@ -41,26 +41,18 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
 
   Vector2<Real> w = u1 - v1;
 
-  // test if point is inside a segment
+  // Test if point is inside a segment, NOTE: assumes points are aligned
   auto isInSegment = [](Vector2<Real> const &pt, Vector2<Real> const &segStart,
                         Vector2<Real> const &segEnd) {
-    // test that pt, segStart, and segEnd are all aligned
-    Real crossP = (pt.y() - segStart.y()) * (segEnd.x() - segStart.x()) -
-                  (pt.x() - segStart.x()) * (segEnd.y() - segStart.y());
-    if (std::abs(crossP) > utils::realThreshold<Real>) {
-      // not aligned
-      return false;
-    }
-
-    if (segStart.x() == segEnd.x()) {
+    if (utils::fuzzyEqual(segStart.x(), segEnd.x())) {
       // vertical segment, test y coordinate
-      return (segStart.y() <= pt.y() && pt.y() <= segEnd.y()) ||
-             (segStart.y() >= pt.y() && pt.y() >= segEnd.y());
+      auto minMax = std::minmax(segStart.y(), segEnd.y());
+      return utils::fuzzyInRange(minMax.first, pt.y(), minMax.second);
     }
 
     // else just test x coordinate
-    return (segStart.x() <= pt.x() && pt.x() <= segEnd.x()) ||
-           (segStart.x() >= pt.x() && pt.x() >= segEnd.x());
+    auto minMax = std::minmax(segStart.x(), segEnd.x());
+    return utils::fuzzyInRange(minMax.first, pt.x(), minMax.second);
   };
 
   // threshold check here to avoid almost parallel lines resulting in very distant intersection
@@ -82,7 +74,7 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
     Real a = perpDot(u, w);
     Real b = perpDot(v, w);
     // threshold check here, we consider almost parallel lines to be parallel
-    if (!utils::fuzzyEqual(a, Real(0)) && !utils::fuzzyEqual(b, Real(0))) {
+    if (std::abs(a) > utils::realThreshold<Real> || std::abs(b) > utils::realThreshold<Real>) {
       // parallel and not collinear so no intersect
       result.intrType = LineSeg2LineSeg2IntrType::None;
     } else {

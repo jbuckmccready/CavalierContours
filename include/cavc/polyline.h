@@ -890,15 +890,17 @@ void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
       // modify previous bulge and trim at intersect
       PlineVertex<Real> &prevVertex = result.lastVertex();
 
-      Real a = angle(arc.center, intersect);
-      auto prevArc = arcRadiusAndCenter(prevVertex, v2);
-      Real prevArcStartAngle = angle(prevArc.center, prevVertex.pos());
-      Real updatedPrevTheta = utils::deltaAngle(prevArcStartAngle, a);
+      if (!prevVertex.bulgeIsZero()) {
+        Real a = angle(arc.center, intersect);
+        auto prevArc = arcRadiusAndCenter(prevVertex, v2);
+        Real prevArcStartAngle = angle(prevArc.center, prevVertex.pos());
+        Real updatedPrevTheta = utils::deltaAngle(prevArcStartAngle, a);
 
-      // ensure the sign matches (may get flipped if intersect is at the very end of the arc, in
-      // which case we do not want to update the bulge)
-      if ((updatedPrevTheta > Real(0)) == (prevVertex.bulge() > Real(0))) {
-        result.lastVertex().bulge() = std::tan(updatedPrevTheta / Real(4));
+        // ensure the sign matches (may get flipped if intersect is at the very end of the arc, in
+        // which case we do not want to update the bulge)
+        if ((updatedPrevTheta > Real(0)) == (prevVertex.bulge() > Real(0))) {
+          result.lastVertex().bulge() = std::tan(updatedPrevTheta / Real(4));
+        }
       }
 
       addOrReplaceIfSamePos(result, PlineVertex<Real>(intersect, Real(0)));
@@ -1351,7 +1353,7 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
   }
 
   if (pline.isClosed() && result.size() > 1) {
-    // joining curves at vertex indexes (n, 0) and (0, 1)
+    // joining segments at vertex indexes (n, 0) and (0, 1)
     const auto &s1 = rawOffsets.back();
     const auto &s2 = rawOffsets[0];
 
@@ -1690,16 +1692,7 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
   std::vector<PlineIntersect<Real>> selfIntersects;
   allSelfIntersects(rawOffsetPline, selfIntersects, rawOffsetPlineSpatialIndex);
 
-  std::unordered_map<std::size_t, std::vector<Vector2<Real>>> intersectsLookup;
-
-  intersectsLookup.reserve(2 * selfIntersects.size());
-
-  for (PlineIntersect<Real> const &si : selfIntersects) {
-    intersectsLookup[si.sIndex1].push_back(si.pos);
-    intersectsLookup[si.sIndex2].push_back(si.pos);
-  }
-
-  if (intersectsLookup.size() == 0) {
+  if (selfIntersects.size() == 0) {
     // no intersects, test that all vertexes are valid distance from original polyline
     bool isValid = std::all_of(rawOffsetPline.vertexes().begin(), rawOffsetPline.vertexes().end(),
                                [&](PlineVertex<Real> const &v) {
@@ -1719,6 +1712,14 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
     return result;
   }
 
+  std::unordered_map<std::size_t, std::vector<Vector2<Real>>> intersectsLookup;
+  intersectsLookup.reserve(2 * selfIntersects.size());
+
+  for (PlineIntersect<Real> const &si : selfIntersects) {
+    intersectsLookup[si.sIndex1].push_back(si.pos);
+    intersectsLookup[si.sIndex2].push_back(si.pos);
+  }
+
   // sort intersects by distance from start vertex
   for (auto &kvp : intersectsLookup) {
     Vector2<Real> startPos = rawOffsetPline[kvp.first].pos();
@@ -1730,20 +1731,20 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
 
   auto intersectsOrigPline = [&](PlineVertex<Real> const &v1, PlineVertex<Real> const &v2) {
     AABB<Real> approxBB = createFastApproxBoundingBox(v1, v2);
-    bool intersects = false;
+    bool hasIntersect = false;
     auto visitor = [&](std::size_t i) {
       using namespace detail;
       std::size_t j = utils::nextWrappingIndex(i, originalPline);
       IntrPlineSegsResult<Real> intrResult =
           intrPlineSegs(v1, v2, originalPline[i], originalPline[j]);
-      intersects = intrResult.intrType != PlineSegIntrType::NoIntersect;
-      return !intersects;
+      hasIntersect = intrResult.intrType != PlineSegIntrType::NoIntersect;
+      return !hasIntersect;
     };
 
     origPlineSpatialIndex.visitQuery(approxBB.xMin, approxBB.yMin, approxBB.xMax, approxBB.yMax,
                                      visitor);
 
-    return intersects;
+    return hasIntersect;
   };
 
   for (auto const &kvp : intersectsLookup) {
