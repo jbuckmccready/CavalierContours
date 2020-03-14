@@ -28,7 +28,7 @@ public:
   Real bulge() const { return m_bulge; }
   Real &bulge() { return m_bulge; }
 
-  bool bulgeIsZero(Real epsilon = utils::realPrecision<Real>) const {
+  bool bulgeIsZero(Real epsilon = utils::realPrecision<Real>()) const {
     return std::abs(m_bulge) < epsilon;
   }
 
@@ -208,28 +208,28 @@ template <typename Real> AABB<Real> extents(Polyline<Real> const &pline) {
       Real arcXMin, arcYMin, arcXMax, arcYMax;
 
       // crosses PI/2
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(0.5) * utils::pi<Real>)) {
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(0.5) * utils::pi<Real>())) {
         arcYMax = arc.center.y() + arc.radius;
       } else {
         arcYMax = std::max(v1.y(), v2.y());
       }
 
       // crosses PI
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, utils::pi<Real>)) {
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, utils::pi<Real>())) {
         arcXMin = arc.center.x() - arc.radius;
       } else {
         arcXMin = std::min(v1.x(), v2.x());
       }
 
       // crosses 3PI/2
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(1.5) * utils::pi<Real>)) {
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(1.5) * utils::pi<Real>())) {
         arcYMin = arc.center.y() - arc.radius;
       } else {
         arcYMin = std::min(v1.y(), v2.y());
       }
 
       // crosses 2PI
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(2) * utils::pi<Real>)) {
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(2) * utils::pi<Real>())) {
         arcXMax = arc.center.x() + arc.radius;
       } else {
         arcXMax = std::max(v1.x(), v2.x());
@@ -507,7 +507,7 @@ template <typename Real> void invertDirection(Polyline<Real> &pline) {
 /// given removed.
 template <typename Real>
 Polyline<Real> pruneSingularities(Polyline<Real> const &pline,
-                                  Real epsilon = utils::realPrecision<Real>) {
+                                  Real epsilon = utils::realPrecision<Real>()) {
   Polyline<Real> result;
   result.isClosed() = pline.isClosed();
 
@@ -631,7 +631,7 @@ std::vector<PlineOffsetSegment<Real>> createUntrimmedOffsetSegments(Polyline<Rea
     seg.v2.pos() = offs * v2ToCenter + v2.pos();
     seg.v2.bulge() = v2.bulge();
 
-    if (radiusAfterOffset < utils::realThreshold<Real>) {
+    if (radiusAfterOffset < utils::realThreshold<Real>()) {
       // collapsed arc, offset arc start and end points towards arc center and turn into line
       // handles case where offset vertexes are equal and simplifies path for clipping algorithm
       seg.collapsedArc = true;
@@ -711,7 +711,7 @@ Vector2<Real> segMidpoint(PlineVertex<Real> const &v1, PlineVertex<Real> const &
 
 template <typename Real>
 void addOrReplaceIfSamePos(Polyline<Real> &pline, PlineVertex<Real> const &vertex,
-                           Real epsilon = utils::realPrecision<Real>) {
+                           Real epsilon = utils::realPrecision<Real>()) {
   if (pline.size() == 0) {
     pline.addVertex(vertex);
     return;
@@ -1047,7 +1047,8 @@ IntrPlineSegsResult<Real> intrPlineSegs(PlineVertex<Real> const &v1, PlineVertex
 
     // helper function to test and get point within arc sweep
     auto pointInSweep = [&](Real t) {
-      if (t + utils::realThreshold<Real> < Real(0) || t > Real(1) + utils::realThreshold<Real>) {
+      if (t + utils::realThreshold<Real>() < Real(0) ||
+          t > Real(1) + utils::realThreshold<Real>()) {
         return std::make_pair(false, Vector2<Real>());
       }
 
@@ -1230,13 +1231,13 @@ void offsetCircleIntersectsWithPline(Polyline<Real> const &pline, Real offset,
                      queryResults);
 
   auto validLineSegIntersect = [](Real t) {
-    return !falseIntersect(t) && std::abs(t) > utils::realPrecision<Real>;
+    return !falseIntersect(t) && std::abs(t) > utils::realPrecision<Real>();
   };
 
   auto validArcSegIntersect = [](Vector2<Real> const &arcCenter, Vector2<Real> const &arcStart,
                                  Vector2<Real> const &arcEnd, Real bulge,
                                  Vector2<Real> const &intrPoint) {
-    return !fuzzyEqual(arcStart, intrPoint, utils::realPrecision<Real>) &&
+    return !fuzzyEqual(arcStart, intrPoint, utils::realPrecision<Real>()) &&
            pointWithinArcSweepAngle(arcCenter, arcStart, arcEnd, bulge, intrPoint);
   };
 
@@ -1318,6 +1319,10 @@ template <typename Real>
 Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
 
   Polyline<Real> result;
+  if (pline.size() < 2) {
+    return result;
+  }
+
   result.vertexes().reserve(pline.size());
   result.isClosed() = pline.isClosed();
 
@@ -1394,7 +1399,7 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
     // must do final singularity prune between first and second vertex after joining curves (n, 0)
     // and (0, 1)
     if (result.size() > 1) {
-      if (fuzzyEqual(result[0].pos(), result[1].pos(), utils::realPrecision<Real>)) {
+      if (fuzzyEqual(result[0].pos(), result[1].pos(), utils::realPrecision<Real>())) {
         result.vertexes().erase(result.vertexes().begin());
       }
     }
@@ -1450,7 +1455,7 @@ void localSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect
     const PlineVertex<Real> &v3 = pline[k];
     // testing intersection between v1->v2 and v2->v3 segments
 
-    if (fuzzyEqual(v1.pos(), v2.pos(), utils::realPrecision<Real>)) {
+    if (fuzzyEqual(v1.pos(), v2.pos(), utils::realPrecision<Real>())) {
       // singularity
       output.emplace_back(i, j, v1.pos(), PlineIntersectType::Coincident);
     } else {
@@ -1460,20 +1465,20 @@ void localSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersect
       case PlineSegIntrType::NoIntersect:
         break;
       case PlineSegIntrType::TangentIntersect:
-        if (!fuzzyEqual(intrResult.point1, v2.pos(), utils::realPrecision<Real>)) {
+        if (!fuzzyEqual(intrResult.point1, v2.pos(), utils::realPrecision<Real>())) {
           output.emplace_back(i, j, intrResult.point1, PlineIntersectType::Tangent);
         }
         break;
       case PlineSegIntrType::OneIntersect:
-        if (!fuzzyEqual(intrResult.point1, v2.pos(), utils::realPrecision<Real>)) {
+        if (!fuzzyEqual(intrResult.point1, v2.pos(), utils::realPrecision<Real>())) {
           output.emplace_back(i, j, intrResult.point1, PlineIntersectType::Simple);
         }
         break;
       case PlineSegIntrType::TwoIntersects:
-        if (!fuzzyEqual(intrResult.point1, v2.pos(), utils::realPrecision<Real>)) {
+        if (!fuzzyEqual(intrResult.point1, v2.pos(), utils::realPrecision<Real>())) {
           output.emplace_back(i, j, intrResult.point1, PlineIntersectType::Simple);
         }
-        if (!fuzzyEqual(intrResult.point2, v2.pos(), utils::realPrecision<Real>)) {
+        if (!fuzzyEqual(intrResult.point2, v2.pos(), utils::realPrecision<Real>())) {
           output.emplace_back(i, j, intrResult.point2, PlineIntersectType::Simple);
         }
         break;
@@ -1519,7 +1524,7 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
     const PlineVertex<Real> &v1 = pline[i];
     const PlineVertex<Real> &v2 = pline[j];
     AABB<Real> envelope = createFastApproxBoundingBox(v1, v2);
-    envelope.expand(utils::realThreshold<Real>);
+    envelope.expand(utils::realThreshold<Real>());
     auto indexVisitor = [&](std::size_t hitIndexStart) {
       std::size_t hitIndexEnd = utils::nextWrappingIndex(hitIndexStart, pline);
       // skip/filter already visited intersects
@@ -1767,7 +1772,7 @@ std::vector<OpenPolylineSlice<Real>> sliceAtIntersects(Polyline<Real> const &ori
         prevVertex = split.splitVertex;
         // skip if they're ontop of each other
         if (fuzzyEqual(split.updatedStart.pos(), split.splitVertex.pos(),
-                       utils::realPrecision<Real>)) {
+                       utils::realPrecision<Real>())) {
           continue;
         }
 
@@ -2041,7 +2046,7 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
         prevVertex = split.splitVertex;
         // skip if they're ontop of each other
         if (fuzzyEqual(split.updatedStart.pos(), split.splitVertex.pos(),
-                       utils::realPrecision<Real>)) {
+                       utils::realPrecision<Real>())) {
           continue;
         }
 
@@ -2160,9 +2165,9 @@ dualSliceAtIntersects(Polyline<Real> const &originalPline, Polyline<Real> const 
 
 /// Stitches raw offset polyline slices together, discarding any that are not valid.
 template <typename Real>
-std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<Real>> const &slices,
-                                                 bool closedPolyline, std::size_t origMaxIndex,
-                                                 Real joinThreshold = utils::realPrecision<Real>) {
+std::vector<Polyline<Real>>
+stitchSlicesTogether(std::vector<OpenPolylineSlice<Real>> const &slices, bool closedPolyline,
+                     std::size_t origMaxIndex, Real joinThreshold = utils::realPrecision<Real>()) {
   std::vector<Polyline<Real>> result;
   if (slices.size() == 0) {
     return result;
@@ -2229,7 +2234,7 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
         }
 
         bool equalToInitial = fuzzyEqual(slice.pline.lastVertex().pos(), initialStartPoint,
-                                         utils::realPrecision<Real>);
+                                         utils::realPrecision<Real>());
 
         return std::make_pair(indexDist, equalToInitial);
       };
@@ -2251,7 +2256,7 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
         // we're done
         if (currPline.size() > 1) {
           if (closedPolyline && fuzzyEqual(currPline[0].pos(), currPline.lastVertex().pos(),
-                                           utils::realPrecision<Real>)) {
+                                           utils::realPrecision<Real>())) {
             currPline.vertexes().pop_back();
           }
           result.emplace_back(std::move(currPline));
@@ -2273,6 +2278,9 @@ std::vector<Polyline<Real>> stitchSlicesTogether(std::vector<OpenPolylineSlice<R
 template <typename Real>
 std::vector<Polyline<Real>> parallelOffset(Polyline<Real> const &pline, Real offset,
                                            bool hasSelfIntersects = false) {
+  if (pline.size() < 2) {
+    return std::vector<Polyline<Real>>();
+  }
   auto rawOffset = createRawOffsetPline(pline, offset);
   if (pline.isClosed() && !hasSelfIntersects) {
     auto slices = sliceAtIntersects(pline, rawOffset, offset);

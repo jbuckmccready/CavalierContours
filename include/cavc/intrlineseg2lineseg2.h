@@ -56,15 +56,15 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
   };
 
   // threshold check here to avoid almost parallel lines resulting in very distant intersection
-  if (std::abs(d) > utils::realThreshold<Real>) {
+  if (std::abs(d) > utils::realThreshold<Real>()) {
     // segments not parallel or collinear
     result.t0 = perpDot(v, w) / d;
     result.t1 = perpDot(u, w) / d;
     result.point = v1 + result.t1 * v;
-    if (result.t0 + utils::realThreshold<Real> < Real(0) ||
-        result.t0 > Real(1) + utils::realThreshold<Real> ||
-        result.t1 + utils::realThreshold<Real> < Real(0) ||
-        result.t1 > Real(1) + utils::realThreshold<Real>) {
+    if (result.t0 + utils::realThreshold<Real>() < Real(0) ||
+        result.t0 > Real(1) + utils::realThreshold<Real>() ||
+        result.t1 + utils::realThreshold<Real>() < Real(0) ||
+        result.t1 > Real(1) + utils::realThreshold<Real>()) {
       result.intrType = LineSeg2LineSeg2IntrType::False;
     } else {
       result.intrType = LineSeg2LineSeg2IntrType::True;
@@ -74,7 +74,7 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
     Real a = perpDot(u, w);
     Real b = perpDot(v, w);
     // threshold check here, we consider almost parallel lines to be parallel
-    if (std::abs(a) > utils::realThreshold<Real> || std::abs(b) > utils::realThreshold<Real>) {
+    if (std::abs(a) > utils::realThreshold<Real>() || std::abs(b) > utils::realThreshold<Real>()) {
       // parallel and not collinear so no intersect
       result.intrType = LineSeg2LineSeg2IntrType::None;
     } else {
@@ -110,7 +110,7 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
       } else {
         // neither segment is a point, check if they overlap
         Vector2<Real> w2 = u2 - v1;
-        if (std::abs(v.x()) < utils::realThreshold<Real>) {
+        if (std::abs(v.x()) < utils::realThreshold<Real>()) {
           result.t0 = w.y() / v.y();
           result.t1 = w2.y() / v.y();
         } else {
@@ -125,14 +125,14 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
 
         // using threshold check here to make intersect "sticky" to prefer considering it an
         // intersect
-        if (result.t0 > Real(1) + utils::realThreshold<Real> ||
-            result.t1 + utils::realThreshold<Real> < Real(0)) {
+        if (result.t0 > Real(1) + utils::realThreshold<Real>() ||
+            result.t1 + utils::realThreshold<Real>() < Real(0)) {
           // no overlap
           result.intrType = LineSeg2LineSeg2IntrType::None;
         } else {
           result.t0 = std::max(result.t0, Real(0));
           result.t1 = std::min(result.t1, Real(1));
-          if (std::abs(result.t1 - result.t0) < utils::realThreshold<Real>) {
+          if (std::abs(result.t1 - result.t0) < utils::realThreshold<Real>()) {
             // intersect is a single point (segments line up end to end)
             result.intrType = LineSeg2LineSeg2IntrType::True;
             result.point = v1 + result.t0 * v;

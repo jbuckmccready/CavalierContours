@@ -31,7 +31,7 @@ IntrLineSeg2Circle2Result<Real> intrLineSeg2Circle2(Vector2<Real> const &p0,
   Real k = circleCenter.y();
 
   Real a = dx * dx + dy * dy;
-  if (std::abs(a) < utils::realThreshold<Real>) {
+  if (std::abs(a) < utils::realThreshold<Real>()) {
     // v1 = v2, test if point is on the circle
     Real xh = p0.x() - h;
     Real yk = p0.y() - k;
@@ -47,7 +47,7 @@ IntrLineSeg2Circle2Result<Real> intrLineSeg2Circle2(Vector2<Real> const &p0,
              (p0.y() * p0.y() - 2.0 * k * p0.y() + k * k) - radius * radius;
     Real discr = b * b - 4.0 * a * c;
 
-    if (std::abs(discr) < utils::realThreshold<Real>) {
+    if (std::abs(discr) < utils::realThreshold<Real>()) {
       // 1 solution (tangent line)
       result.numIntersects = 1;
       result.t0 = -b / (Real(2) * a);

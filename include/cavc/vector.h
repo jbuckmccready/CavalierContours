@@ -110,7 +110,7 @@ protected:
 };
 
 template <typename Real, std::size_t N>
-bool fuzzyZero(Vector<Real, N> const &v, Real epsilon = utils::realThreshold<Real>) {
+bool fuzzyZero(Vector<Real, N> const &v, Real epsilon = utils::realThreshold<Real>()) {
   bool allCompAreZero = std::abs(v[0]) < epsilon;
   for (std::size_t i = 1; i < N; ++i) {
     allCompAreZero = allCompAreZero && std::abs(v[i]) < epsilon;
@@ -121,7 +121,7 @@ bool fuzzyZero(Vector<Real, N> const &v, Real epsilon = utils::realThreshold<Rea
 
 template <typename Real, std::size_t N>
 bool fuzzyEqual(Vector<Real, N> const &v1, Vector<Real, N> const &v2,
-                Real epsilon = utils::realThreshold<Real>) {
+                Real epsilon = utils::realThreshold<Real>()) {
   for (std::size_t i = 0; i < N; ++i) {
     if (!utils::fuzzyEqual(v1[i], v2[i], epsilon)) {
       return false;

@@ -32,7 +32,7 @@ IntrCircle2Circle2Result<Real> intrCircle2Circle2(Real radius1, Vector2<Real> co
   Vector2<Real> cv = center2 - center1;
   Real d2 = dot(cv, cv);
   Real d = std::sqrt(d2);
-  if (d < utils::realThreshold<Real>) {
+  if (d < utils::realThreshold<Real>()) {
     // same center position
     if (utils::fuzzyEqual(radius1, radius2)) {
       result.intrType = Circle2Circle2IntrType::Coincident;
@@ -41,8 +41,8 @@ IntrCircle2Circle2Result<Real> intrCircle2Circle2(Real radius1, Vector2<Real> co
     }
   } else {
     // different center position
-    if (d > radius1 + radius2 + utils::realThreshold<Real> ||
-        d + utils::realThreshold<Real> < std::abs(radius1 - radius2)) {
+    if (d > radius1 + radius2 + utils::realThreshold<Real>() ||
+        d + utils::realThreshold<Real>() < std::abs(radius1 - radius2)) {
       result.intrType = Circle2Circle2IntrType::NoIntersect;
     } else {
       Real rad1Sq = radius1 * radius1;

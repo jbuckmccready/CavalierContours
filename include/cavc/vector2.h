@@ -72,7 +72,7 @@ Vector2<Real> closestPointOnLineSeg(Vector2<Real> const &p0, Vector2<Real> const
 /// vector (p1 - p0).
 template <typename Real>
 bool isLeftOrCoincident(Vector2<Real> const &p0, Vector2<Real> const &p1,
-                        Vector2<Real> const &point, Real epsilon = utils::realThreshold<Real>) {
+                        Vector2<Real> const &point, Real epsilon = utils::realThreshold<Real>()) {
   return (p1.x() - p0.x()) * (point.y() - p0.y()) - (p1.y() - p0.y()) * (point.x() - p0.x()) >
          -epsilon;
 }
@@ -81,7 +81,7 @@ bool isLeftOrCoincident(Vector2<Real> const &p0, Vector2<Real> const &p1,
 /// the vector (p1 - p0).
 template <typename Real>
 bool isRightOrCoincident(Vector2<Real> const &p0, Vector2<Real> const &p1,
-                         Vector2<Real> const &point, Real epsilon = utils::realThreshold<Real>) {
+                         Vector2<Real> const &point, Real epsilon = utils::realThreshold<Real>()) {
   return (p1.x() - p0.x()) * (point.y() - p0.y()) - (p1.y() - p0.y()) * (point.x() - p0.x()) <
          epsilon;
 }
@@ -90,7 +90,7 @@ bool isRightOrCoincident(Vector2<Real> const &p0, Vector2<Real> const &p1,
 template <typename Real>
 bool pointWithinArcSweepAngle(Vector2<Real> const &center, Vector2<Real> const &arcStart,
                               Vector2<Real> const &arcEnd, Real bulge, Vector2<Real> const &point) {
-  assert(std::abs(bulge) > utils::realThreshold<Real> && "expected arc");
+  assert(std::abs(bulge) > utils::realThreshold<Real>() && "expected arc");
   assert(std::abs(bulge) <= Real(1) && "bulge should always be between -1 and 1");
 
   if (bulge > Real(0)) {

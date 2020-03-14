@@ -7,39 +7,39 @@
 namespace cavc {
 namespace utils {
 // absolute and relative threshold to be used for comparing reals
-template <typename Real> constexpr Real realThreshold = Real(1e-8);
+template <typename Real> constexpr Real realThreshold() { return Real(1e-8); }
 
 // absolute and relative precision to be used for reals in geometric computation (e.g. to check for
 // singularities)
-template <typename Real> constexpr Real realPrecision = Real(1e-5);
+template <typename Real> constexpr Real realPrecision() { return Real(1e-5); }
 
-template <typename Real> constexpr Real pi = Real(3.14159265358979323846264338327950288);
+template <typename Real> constexpr Real pi() { return Real(3.14159265358979323846264338327950288); }
 
-template <typename Real> constexpr Real tau = Real(2) * pi<Real>;
+template <typename Real> constexpr Real tau() { return Real(2) * pi<Real>(); }
 
-template <typename Real> bool fuzzyEqual(Real x, Real y, Real epsilon = realThreshold<Real>) {
+template <typename Real> bool fuzzyEqual(Real x, Real y, Real epsilon = realThreshold<Real>()) {
   return std::abs(x - y) < epsilon;
 }
 
 template <typename Real>
-bool fuzzyInRange(Real minValue, Real value, Real maxValue, Real epsilon = realThreshold<Real>) {
+bool fuzzyInRange(Real minValue, Real value, Real maxValue, Real epsilon = realThreshold<Real>()) {
   return (value + epsilon > minValue) && (value < maxValue + epsilon);
 }
 
 /// Normalize radius to be between 0 and 2PI, e.g. -PI/4 becomes 7PI/8 and 5PI becomes PI.
 template <typename Real> Real normalizeRadians(Real angle) {
-  if (angle >= Real(0) && angle <= tau<Real>) {
+  if (angle >= Real(0) && angle <= tau<Real>()) {
     return angle;
   }
 
-  return angle - std::floor(angle / tau<Real>) * tau<Real>;
+  return angle - std::floor(angle / tau<Real>()) * tau<Real>();
 }
 
 /// Returns the smaller difference between two angles, result is negative if angle2 < angle1.
 template <typename Real> Real deltaAngle(Real angle1, Real angle2) {
   Real diff = normalizeRadians(angle2 - angle1);
-  if (diff > pi<Real>) {
-    diff -= tau<Real>;
+  if (diff > pi<Real>()) {
+    diff -= tau<Real>();
   }
 
   return diff;
@@ -48,7 +48,7 @@ template <typename Real> Real deltaAngle(Real angle1, Real angle2) {
 /// Tests if angle is between a start and end angle (counter clockwise start to end, inclusive).
 template <typename Real>
 bool angleIsBetween(Real startAngle, Real endAngle, Real testAngle,
-                    Real epsilon = realThreshold<Real>) {
+                    Real epsilon = realThreshold<Real>()) {
   Real endSweep = normalizeRadians(endAngle - startAngle);
   Real midSweep = normalizeRadians(testAngle - startAngle);
 
@@ -57,7 +57,7 @@ bool angleIsBetween(Real startAngle, Real endAngle, Real testAngle,
 
 template <typename Real>
 bool angleIsWithinSweep(Real startAngle, Real sweepAngle, Real testAngle,
-                        Real epsilon = realThreshold<Real>) {
+                        Real epsilon = realThreshold<Real>()) {
   Real endAngle = startAngle + sweepAngle;
   if (sweepAngle < Real(0)) {
     return angleIsBetween(endAngle, startAngle, testAngle, epsilon);
