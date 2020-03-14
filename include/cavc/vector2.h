@@ -68,6 +68,12 @@ Vector2<Real> closestPointOnLineSeg(Vector2<Real> const &p0, Vector2<Real> const
   return p0 + b * v;
 }
 
+/// Returns true if point is left of the line pointing in the direction of the vector (p1 - p0).
+template <typename Real>
+bool isLeft(Vector2<Real> const &p0, Vector2<Real> const &p1, Vector2<Real> const &point) {
+  return (p1.x() - p0.x()) * (point.y() - p0.y()) - (p1.y() - p0.y()) * (point.x() - p0.x()) > 0.0;
+}
+
 /// Returns true if point is left or fuzzy coincident with the line pointing in the direction of the
 /// vector (p1 - p0).
 template <typename Real>
