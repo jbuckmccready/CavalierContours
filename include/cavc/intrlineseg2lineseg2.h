@@ -1,6 +1,8 @@
 #ifndef CAVC_INTRLINESEG2LINESEG2_H
 #define CAVC_INTRLINESEG2LINESEG2_H
 #include "vector2.h"
+#include <algorithm>
+
 namespace cavc {
 enum class LineSeg2LineSeg2IntrType {
   // no intersect (segments are parallel and not collinear)
