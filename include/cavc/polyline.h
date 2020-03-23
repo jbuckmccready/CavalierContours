@@ -342,8 +342,12 @@ Polyline<Real> convertArcsToLines(Polyline<Real> const &pline, Real error) {
     if (v1.bulgeIsZero()) {
       result.addVertex(v1);
     } else {
-
       auto arc = arcRadiusAndCenter(v1, v2);
+      if (arc.radius < error + utils::realThreshold<double>()) {
+        result.addVertex(v1);
+        return true;
+      }
+
       auto startAngle = angle(arc.center, v1.pos());
       auto endAngle = angle(arc.center, v2.pos());
       Real deltaAngle = std::abs(cavc::utils::deltaAngle(startAngle, endAngle));
