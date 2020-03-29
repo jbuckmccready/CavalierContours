@@ -20,7 +20,7 @@ template <typename Real> struct IntrLineSeg2LineSeg2Result {
   // if True then t0 and t1 are undefined, if False then t0 is the parametric value of the first
   // segment and t1 is the parametric value of the second segment, if Coincident then point is
   // undefined and t0 holds the parametric value start of coincidence and t1 holds the parametric
-  // value of the end of the coincidence for the first segments equation
+  // value of the end of the coincidence for the second segment's equation
   LineSeg2LineSeg2IntrType intrType;
   Real t0;
   Real t1;

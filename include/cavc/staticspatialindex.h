@@ -30,8 +30,8 @@ public:
     m_pos = 0;
     m_minX = std::numeric_limits<Real>::infinity();
     m_minY = std::numeric_limits<Real>::infinity();
-    m_maxX = -1 * std::numeric_limits<Real>::infinity();
-    m_maxY = -1 * std::numeric_limits<Real>::infinity();
+    m_maxX = -std::numeric_limits<Real>::infinity();
+    m_maxY = -std::numeric_limits<Real>::infinity();
   }
 
   Real MinX() const { return m_minX; }
@@ -59,6 +59,18 @@ public:
 
   void finish() {
     assert(m_pos >> 2 == m_numItems && "added item count should equal static size given");
+
+    // if number of items is less than node size then skip sorting since each node of boxes must be
+    // fully scanned regardless and there is only one node
+    if (m_numItems <= NodeSize) {
+      // fill root box with total extents
+      m_boxes[m_pos++] = m_minX;
+      m_boxes[m_pos++] = m_minY;
+      m_boxes[m_pos++] = m_maxX;
+      m_boxes[m_pos++] = m_maxY;
+      return;
+    }
+
     Real width = m_maxX - m_minX;
     Real height = m_maxY - m_minY;
     std::vector<std::uint32_t> hilbertValues(m_numItems);

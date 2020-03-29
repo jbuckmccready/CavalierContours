@@ -6,12 +6,18 @@
 #include <iterator>
 namespace cavc {
 namespace utils {
-// absolute and relative threshold to be used for comparing reals
+// absolute threshold to be used for comparing reals generally
 template <typename Real> constexpr Real realThreshold() { return Real(1e-8); }
 
-// absolute and relative precision to be used for reals in geometric computation (e.g. to check for
+// absolute threshold to be used for reals in common geometric computation (e.g. to check for
 // singularities)
 template <typename Real> constexpr Real realPrecision() { return Real(1e-5); }
+
+// absolute threshold to be used for joining slices together at end points
+template <typename Real> constexpr Real sliceJoinThreshold() { return Real(1e-4); }
+
+// absolute threshold to be used for pruning invalid slices for offset
+template <typename Real> constexpr Real offsetThreshold() { return Real(1e-3); }
 
 template <typename Real> constexpr Real pi() { return Real(3.14159265358979323846264338327950288); }
 
@@ -103,6 +109,13 @@ template <typename T> std::size_t prevWrappingIndex(std::size_t index, const T &
 
   return index - 1;
 }
+
+struct IndexPairHash {
+  std::size_t operator()(std::pair<std::size_t, std::size_t> const &pair) const {
+    return std::hash<std::size_t>()(pair.first) ^ std::hash<std::size_t>()(pair.second);
+  }
+};
+
 } // namespace utils
 } // namespace cavc
 

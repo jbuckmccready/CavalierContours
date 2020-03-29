@@ -46,6 +46,12 @@ Vector2<Real> pointOnCircle(Real radius, Vector2<Real> const &center, Real angle
                        center.y() + radius * std::sin(angle)};
 }
 
+/// Return the point on the segment going from p0 to p1 at parametric value t.
+template <typename Real>
+Vector2<Real> pointFromParametric(Vector2<Real> const &p0, Vector2<Real> const &p1, Real t) {
+  return p0 + t * (p1 - p0);
+}
+
 /// Returns the closest point that lies on the line segment from p0 to p1 to the point given.
 template <typename Real>
 Vector2<Real> closestPointOnLineSeg(Vector2<Real> const &p0, Vector2<Real> const &p1,
