@@ -36,7 +36,7 @@ C++14 header only library for offsetting open and closed 2D curves, including se
 
 # Quick Code Example
 ```c++
-#include "cavc/polyline.h"
+#include "cavc/polylineoffset.h"
 
 // input polyline
 cavc::Polyline<double> input;
@@ -81,74 +81,21 @@ The key clarifications/differences are:
 
 Here is example code and visualizations of the algorithm operating on a closed polyline with no self intersects as input. 
 ## Original input polyline, *pline* in blue, vertexes in red
-```c++
-#include "cavc/polyline.h"
-using namespace cavc;
-// Create input polyline
-Polyline<double> input;
-// Add vertexes as (x, y, bulge)
-input.addVertex(0, 25, 1);
-input.addVertex(0, 0, 0);
-input.addVertex(2, 0, 1);
-input.addVertex(10, 0, -0.5);
-input.addVertex(8, 9, 0.374794619217547);
-input.addVertex(21, 0, 0);
-input.addVertex(23, 0, 1);
-input.addVertex(32, 0, -0.5);
-input.addVertex(28, 0, 0.5);
-input.addVertex(39, 21, 0);
-input.addVertex(28, 12, 0);
-input.isClosed() = true;
-```
 ![Input Polyline](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/input_polyline.png)
 
 ## Raw offset segments generated in purple (Step 1)
-```c++
-// Step 1. Create untrimmed offset segments
-double offset = 3;
-std::vector<PlineOffsetSegment<double>> rawOffsets = createUntrimmedOffsetSegments(input, offset);
-```
 ![Raw Offset Segments](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/raw_offset_segments.png)
 
 ## Raw offset polyline created from raw offset segments, *pline1* (in green) (Step 2)
-
-```c++
-// Step 2. Create raw offset polyline
-// NOTE The code is factored such that createRawOffsetPline handles creating the untrimmed 
-// offsets done in step 1
-Polyline<double> pline1 =  createRawOffsetPline(input, offset);
-```
 ![Raw Offset Polyline](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/raw_offset_polyline.png)
 
 ## Raw offset polyline self intersects (dark cyan) (Step 4)
-
-```c++
-// Step 4. Find all self intersects of pline1 (Step 3 skipped for this example case)
-// spatial index used for finding self intersects
-StaticSpatialIndex<double> rawOffsetPlineSpatialIndex = createApproxSpatialIndex(pline1);
-std::vector<PlineIntersect<double>> selfIntersects;
-// selfIntersects passed by reference to be filled by allSelfIntersects
-allSelfIntersects(pline1, selfIntersects, rawOffsetPlineSpatialIndex);
-```
 ![Raw Offset Polyline Intersects](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/raw_offset_polyline_intersects.png)
 
 ## Valid open polyline slices created from self intersects (in green, red, and blue) (Step 5 & 6)
-
-```c++
-// Step 5 and 6. Create valid open polyline slices
-// NOTE The code is factored such that sliceAtIntersects handles finding the self intersects in step 4
-// and discarding invalid slices in step 6
-std::vector<OpenPolylineSlice<double>> slices = sliceAtIntersects(input, pline1, offset);
-```
 ![Valid Slices](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/valid_slices.png)
 
 ## Open polyline slices stitched together (in red and blue) (Step 7)
-
-```c++
-// Step 7. Stitch valid slices together
-std::size_t origMaxIndex = pline1.size() - 1;
-std::vector<Polyline<double>> finalResult = stitchSlicesTogether(slices, input.isClosed(), origMaxIndex)
-```
 ![Final Output Polylines](https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/algorithm_steps/output.png)
 
 
