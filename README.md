@@ -55,7 +55,7 @@ input.addVertex(28, 12, 0);
 input.isClosed() = true;
 
 // compute the resulting offset polylines, offset = 3
-std::vector<cavc::Polyline<double>> results = cavc::parallelOffset(input, 3);
+std::vector<cavc::Polyline<double>> results = cavc::parallelOffset(input, 3.0);
 ```
 # Polyline Structure
 Polylines are defined by a sequence of vertexes and a bool indicating whether the polyline is closed or open. Each vertex has a 2D position (x and y) as well as a bulge value. Bulge is used to define arcs, where `bulge = tan(theta/4)`. `theta` is the arc sweep angle from the starting vertex position to the next vertex position. If the polyline is closed then the last vertex connects to the first vertex, otherwise it does not (and the last vertex bulge value is unused). See [[2]](#references) for more details regarding bulge calculations.
