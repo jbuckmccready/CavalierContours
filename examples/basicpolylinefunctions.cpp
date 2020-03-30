@@ -36,10 +36,10 @@ int main(int argc, char *argv[]) {
   assert(utils::fuzzyEqual(extents.yMax, radius));
 
   // Closest point on polyline to a point given
-  ClosestPoint<double> closetPoint(ccwCircle, Vector2<double>(radius, 10.0 * radius));
+  ClosestPoint<double> closestPoint(ccwCircle, Vector2<double>(radius, 10.0 * radius));
   // index is the starting vertex index of the closest segment (going clockwise so arc starting at
   // the second vertex is closest)
-  assert(closetPoint.index() == 1);
-  assert(fuzzyEqual(closetPoint.point(), Vector2<double>(radius, radius)));
-  assert(utils::fuzzyEqual(closetPoint.distance(), 9.0 * radius));
+  assert(closestPoint.index() == 1);
+  assert(fuzzyEqual(closestPoint.point(), Vector2<double>(radius, radius)));
+  assert(utils::fuzzyEqual(closestPoint.distance(), 9.0 * radius));
 }
