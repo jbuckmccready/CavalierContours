@@ -1,9 +1,11 @@
 # Summary
-C++14 header only library for offsetting open and closed 2D curves, including self intersecting curves. Supports polylines defined by straight line and constant radius arc segments, other curves may be offset by first approximating them as a polyline. For interactive UI and development go to the development project [CavalierContoursDev](https://github.com/jbuckmccready/CavalierContoursDev).
+C++14 header only library for processing 2D polylines containing both straight line and constant radius arc segments. Supports contour/parallel offsetting, boolean operations (OR, AND, NOT, XOR) between closed polylines, and other common functions (winding number, area, path length, distance to point, etc.). For interactive UI and development go to the development project [CavalierContoursDev](https://github.com/jbuckmccready/CavalierContoursDev). For quick code examples look in the [examples](examples/).
 
 <img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example1.png" width="400"/> <img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example2.png" width="400"/>
 
-<img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example6.png" width="400"/> <img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example7.png" width="400"/>
+<img src="https://raw.githubusercontent.com/jbuckmccready/CavalierContoursDoc/master/images/pretty_examples/example6.png" width="800"/>
+
+<img src="https://github.com/jbuckmccready/CavalierContoursDoc/blob/master/gifs/PolylineOffsets.gif" width="400"/> <img src="https://github.com/jbuckmccready/CavalierContoursDoc/blob/master/gifs/PolylineCombines.gif" width="400"/>
 
 # Table of Contents
 - [Summary](#summary)
@@ -34,7 +36,7 @@ C++14 header only library for offsetting open and closed 2D curves, including se
 - [References](#references)
 
 
-# Quick Code Example
+# Quick Polyline Offset Example
 ```c++
 #include "cavc/polylineoffset.h"
 
@@ -60,7 +62,7 @@ std::vector<cavc::Polyline<double>> results = cavc::parallelOffset(input, 3.0);
 # Polyline Structure
 Polylines are defined by a sequence of vertexes and a bool indicating whether the polyline is closed or open. Each vertex has a 2D position (x and y) as well as a bulge value. Bulge is used to define arcs, where `bulge = tan(theta/4)`. `theta` is the arc sweep angle from the starting vertex position to the next vertex position. If the polyline is closed then the last vertex connects to the first vertex, otherwise it does not (and the last vertex bulge value is unused). See [[2]](#references) for more details regarding bulge calculations.
 
-# Algorithm and Stepwise Example
+# Offset Algorithm and Stepwise Example
 1. Generate raw offset segments from the input polyline, *pline*.
 2. Create the raw offset polyline, *pline1*, by trimming/joining raw offset segments acquired in step 1.
 3. If the input polyline, *pline*, has self intersections or is an open polyline then repeat steps 1 and 2 with the offset negated (e.g. if the offset was 0.5 then create raw offset polyline with offset of -0.5), this is known as *pline2*.
