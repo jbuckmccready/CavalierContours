@@ -36,8 +36,8 @@ processForCombine(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
   findIntersects(pline1, pline2, pline1SpatialIndex, intrs);
 
   ProcessForCombineResult<Real> result;
-  result.pline1IsCW = area(pline1) < 0.0;
-  result.pline2IsCW = area(pline2) < 0.0;
+  result.pline1IsCW = getArea(pline1) < 0.0;
+  result.pline2IsCW = getArea(pline2) < 0.0;
   result.nonCoincidentIntersects.swap(intrs.intersects);
 
   if (intrs.coincidentIntersects.size() == 0) {
@@ -345,9 +345,9 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
   CombineResult<Real> result;
 
   // helper function test if point is inside A
-  auto pointInA = [&](Vector2<Real> const &pt) { return windingNumber(plineA, pt) != 0; };
+  auto pointInA = [&](Vector2<Real> const &pt) { return getWindingNumber(plineA, pt) != 0; };
   // helper function test if point is inside B
-  auto pointInB = [&](Vector2<Real> const &pt) { return windingNumber(plineB, pt) != 0; };
+  auto pointInB = [&](Vector2<Real> const &pt) { return getWindingNumber(plineB, pt) != 0; };
 
   // helper functions (assuming no intersects between A and B)
   auto isAInsideB = [&] { return pointInB(plineA[0].pos()); };
@@ -417,7 +417,7 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
           stitchOrderedSlicesIntoClosedPolylines(slicesRemaining);
 
       for (std::size_t i = 0; i < remaining.size(); ++i) {
-        const bool isCW = area(remaining[i]) < Real(0);
+        const bool isCW = getArea(remaining[i]) < Real(0);
         if (isCW != combineInfo.pline1IsCW) {
           // orientation flipped from original, therefore it is a subtracted island
           result.subtracted.push_back(std::move(remaining[i]));

@@ -62,7 +62,7 @@ private:
 };
 
 /// Compute the extents of a polyline.
-template <typename Real> AABB<Real> extents(Polyline<Real> const &pline) {
+template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
   if (pline.vertexes().size() < 2) {
     return AABB<Real>{pline[0].x(), pline[0].y(), pline[0].x(), pline[0].y()};
   }
@@ -140,7 +140,7 @@ template <typename Real> AABB<Real> extents(Polyline<Real> const &pline) {
 
 /// Compute the area of a closed polyline, assumes no self intersects, returns positive number if
 /// polyline direction is counter clockwise, negative if clockwise, zero if not closed
-template <typename Real> Real area(Polyline<Real> const &pline) {
+template <typename Real> Real getArea(Polyline<Real> const &pline) {
   // Implementation notes:
   // Using the shoelace formula (https://en.wikipedia.org/wiki/Shoelace_formula) modified to support
   // arcs defined by a bulge value. The shoelace formula returns a negative value for clockwise
@@ -194,11 +194,10 @@ public:
   }
 
   void compute(Polyline<Real> const &pline, Vector2<Real> const &point) {
-    assert(pline.vertexes().size > 0 && "empty polyline has no closest point");
+    assert(pline.vertexes().size() > 0 && "empty polyline has no closest point");
     if (pline.vertexes().size() == 1) {
       m_index = 0;
-      point = pline[0];
-      m_distance = length(point - pline[0].pos());
+      m_distance = length(pline[0].pos() - pline[0].pos());
       return;
     }
 
@@ -210,7 +209,7 @@ public:
       Real dist2 = dot(diffVec, diffVec);
       if (dist2 < m_distance) {
         m_index = i;
-        point = cp;
+        m_point = cp;
         m_distance = dist2;
       }
 
@@ -218,7 +217,7 @@ public:
       return true;
     };
 
-    iterateSegIndices(pline, visitor);
+    pline.visitSegIndices(visitor);
     // we used the squared distance while iterating and comparing, take sqrt for actual distance
     m_distance = std::sqrt(m_distance);
   }
@@ -368,7 +367,7 @@ StaticSpatialIndex<Real> createApproxSpatialIndex(Polyline<Real> const &pline) {
 }
 
 /// Calculate the total path length of a polyline.
-template <typename Real> Real pathLength(Polyline<Real> const &pline) {
+template <typename Real> Real getPathLength(Polyline<Real> const &pline) {
   Real result = Real(0);
   auto visitor = [&](std::size_t i, std::size_t j) {
     result += segLength(pline[i], pline[j]);
@@ -385,7 +384,7 @@ template <typename Real> Real pathLength(Polyline<Real> const &pline) {
 /// adapted from http://geomalgorithms.com/a03-_inclusion.html to support arc segments. NOTE: The
 /// result is not defined if the point lies ontop of the polyline.
 template <typename Real>
-int windingNumber(Polyline<Real> const &pline, Vector2<Real> const &point) {
+int getWindingNumber(Polyline<Real> const &pline, Vector2<Real> const &point) {
   if (!pline.isClosed() && !(fuzzyEqual(pline[0].pos(), pline.lastVertex().pos()))) {
     return 0;
   }

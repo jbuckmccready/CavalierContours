@@ -789,7 +789,7 @@ std::vector<OpenPolylineSlice<Real>> slicesFromRawOffset(Polyline<Real> const &o
     if (isValidPline && fuzzyEqual(currSlice[0].pos(), currSlice.lastVertex().pos())) {
       // discard very short slice loops (invalid loops may arise due to valid offset distance
       // thresholding)
-      isValidPline = pathLength(currSlice) > Real(1e-2);
+      isValidPline = getPathLength(currSlice) > Real(1e-2);
     }
 
     if (isValidPline) {
