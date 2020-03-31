@@ -305,11 +305,15 @@ private:
   std::vector<std::size_t> m_indices;
   std::size_t m_pos;
 
+  // quicksort that partially sorts the bounding box data alongside the Hilbert values
   static void sort(std::vector<std::uint32_t> &values, std::vector<Real> &boxes,
                    std::vector<std::size_t> &indices, std::size_t left, std::size_t right) {
+    assert(left <= right);
 
-    if (left >= right)
+    // check against NodeSize (only need to sort down to NodeSize buckets)
+    if (right - left < NodeSize) {
       return;
+    }
 
     auto pivot = values[(left + right) >> 1];
     auto i = left - 1;
