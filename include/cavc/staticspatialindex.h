@@ -311,7 +311,7 @@ private:
     assert(left <= right);
 
     // check against NodeSize (only need to sort down to NodeSize buckets)
-    if (right - left < NodeSize) {
+    if (left / NodeSize >= right / NodeSize) {
       return;
     }
 
