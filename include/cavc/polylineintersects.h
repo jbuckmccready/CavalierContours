@@ -275,7 +275,10 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
   }
 
   std::unordered_set<std::pair<std::size_t, std::size_t>, utils::IndexPairHash> visitedSegmentPairs;
+  visitedSegmentPairs.reserve(pline.size());
 
+  std::vector<std::size_t> queryStack;
+  queryStack.reserve(8);
   auto visitor = [&](std::size_t i, std::size_t j) {
     const PlineVertex<Real> &v1 = pline[i];
     const PlineVertex<Real> &v2 = pline[j];
@@ -337,7 +340,7 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
     };
 
     spatialIndex.visitQuery(envelope.xMin, envelope.yMin, envelope.xMax, envelope.yMax,
-                            indexVisitor);
+                            indexVisitor, queryStack);
 
     // visit all pline indexes
     return true;
@@ -361,6 +364,8 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
                     StaticSpatialIndex<Real, N> const &pline1SpatialIndex,
                     PlineIntersectsResult<Real> &output) {
   std::vector<std::size_t> queryResults;
+  std::vector<std::size_t> queryStack;
+  queryStack.reserve(8);
   std::unordered_set<std::pair<std::size_t, std::size_t>, utils::IndexPairHash> possibleDuplicate;
 
   auto &intrs = output.intersects;
@@ -373,7 +378,7 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
     queryResults.clear();
 
     AABB<Real> bb = createFastApproxBoundingBox(p2v1, p2v2);
-    pline1SpatialIndex.query(bb.xMin, bb.yMin, bb.xMax, bb.yMax, queryResults);
+    pline1SpatialIndex.query(bb.xMin, bb.yMin, bb.xMax, bb.yMax, queryResults, queryStack);
 
     for (std::size_t i1 : queryResults) {
       std::size_t j1 = utils::nextWrappingIndex(i1, pline1);

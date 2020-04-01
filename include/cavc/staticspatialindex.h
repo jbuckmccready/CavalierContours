@@ -18,15 +18,29 @@ public:
     m_numItems = numItems;
     std::size_t n = numItems;
     std::size_t numNodes = numItems;
+
+    // loop through initially to determine size for reserving memory
+    std::size_t levelBoundsSize = 1;
+    do {
+      n = static_cast<std::size_t>(std::ceil(static_cast<float>(n) / NodeSize));
+      levelBoundsSize += 1;
+    } while (n != 1);
+
+    m_levelBounds.reserve(levelBoundsSize);
+
+    n = numItems;
     m_levelBounds.push_back(n * 4);
+
+    // now populate level bounds and numNodes
     do {
       n = static_cast<std::size_t>(std::ceil(static_cast<float>(n) / NodeSize));
       numNodes += n;
       m_levelBounds.push_back(numNodes * 4);
     } while (n != 1);
 
-    m_boxes.resize(numNodes * 4);
-    m_indices.resize(numNodes);
+    m_numNodes = numNodes;
+    m_boxes = std::unique_ptr<Real[]>(new Real[numNodes * 4]);
+    m_indices = std::unique_ptr<std::size_t[]>(new std::size_t[numNodes]);
     m_pos = 0;
     m_minX = std::numeric_limits<Real>::infinity();
     m_minY = std::numeric_limits<Real>::infinity();
@@ -63,6 +77,7 @@ public:
     // if number of items is less than node size then skip sorting since each node of boxes must be
     // fully scanned regardless and there is only one node
     if (m_numItems <= NodeSize) {
+      m_indices[m_pos >> 2] = 0;
       // fill root box with total extents
       m_boxes[m_pos++] = m_minX;
       m_boxes[m_pos++] = m_minY;
@@ -73,7 +88,7 @@ public:
 
     Real width = m_maxX - m_minX;
     Real height = m_maxY - m_minY;
-    std::vector<std::uint32_t> hilbertValues(m_numItems);
+    std::unique_ptr<std::uint32_t[]> hilbertValues(new std::uint32_t[m_numItems]);
 
     std::size_t pos = 0;
 
@@ -98,7 +113,7 @@ public:
     }
 
     // sort items by their Hilbert value (for packing later)
-    sort(hilbertValues, m_boxes, m_indices, 0, m_numItems - 1);
+    sort(&hilbertValues[0], &m_boxes[0], &m_indices[0], 0, m_numItems - 1);
 
     // generate nodes at each tree level, bottom-up
     pos = 0;
@@ -142,7 +157,7 @@ public:
   // Visit all the bounding boxes in the spatial index. Visitor function has the signature
   // void(Real xmin, Real ymin, Real xmax, Real ymax, std::size_t level).
   template <typename F> void visitBoundingBoxes(F &&visitor) const {
-    std::size_t nodeIndex = m_boxes.size() - 4;
+    std::size_t nodeIndex = 4 * m_numNodes - 4;
     std::size_t level = m_levelBounds.size() - 1;
 
     std::vector<std::size_t> stack;
@@ -172,7 +187,7 @@ public:
     }
   }
 
-  // Query the spatial index adding indexes to the results vector given.
+  // See other overloads for details.
   void query(Real minX, Real minY, Real maxX, Real maxY, std::vector<std::size_t> &results) const {
     auto visitor = [&](std::size_t index) {
       results.push_back(index);
@@ -182,20 +197,39 @@ public:
     visitQuery(minX, minY, maxX, maxY, visitor);
   }
 
-  // Query the spatial index, invoking a visitor function for each index that overlaps the bounding
-  // box given. Visitor function has the signature bool(std::size_t index), if visitor returns false
-  // the query stops early, otherwise the query continues.
+  // Query the spatial index adding indexes to the results vector given. This overload accepts an
+  // existing vector to use as a stack and takes care of clearing the stack before use.
+  void query(Real minX, Real minY, Real maxX, Real maxY, std::vector<std::size_t> &results,
+             std::vector<std::size_t> &stack) const {
+    auto visitor = [&](std::size_t index) {
+      results.push_back(index);
+      return true;
+    };
+
+    visitQuery(minX, minY, maxX, maxY, visitor, stack);
+  }
+
+  // See other overloads for details.
   template <typename F>
   void visitQuery(Real minX, Real minY, Real maxX, Real maxY, F &&visitor) const {
-    assert(m_pos == m_boxes.size() && "data not yet indexed - call Finish() before querying");
+    std::vector<std::size_t> stack;
+    stack.reserve(16);
+    visitQuery(minX, minY, maxX, maxY, std::forward<F>(visitor), stack);
+  }
 
-    auto nodeIndex = m_boxes.size() - 4;
+  // Query the spatial index, invoking a visitor function for each index that overlaps the bounding
+  // box given. Visitor function has the signature bool(std::size_t index), if visitor returns false
+  // the query stops early, otherwise the query continues. This overload accepts an existing vector
+  // to use as a stack and takes care of clearing the stack before use.
+  template <typename F>
+  void visitQuery(Real minX, Real minY, Real maxX, Real maxY, F &&visitor,
+                  std::vector<std::size_t> &stack) const {
+    assert(m_pos == 4 * m_numNodes && "data not yet indexed - call Finish() before querying");
+
+    auto nodeIndex = 4 * m_numNodes - 4;
     auto level = m_levelBounds.size() - 1;
 
-    // stack for traversing nodes
-    std::vector<std::size_t> stack;
-    // reserve some space to avoid repeated small allocations
-    stack.reserve(16);
+    stack.clear();
 
     auto done = false;
 
@@ -207,14 +241,11 @@ public:
       for (std::size_t pos = nodeIndex; pos < end; pos += 4) {
         auto index = m_indices[pos >> 2];
         // check if node bbox intersects with query bbox
-        if (maxX < m_boxes[pos])
-          continue; // maxX < nodeMinX
-        if (maxY < m_boxes[pos + 1])
-          continue; // maxY < nodeMinY
-        if (minX > m_boxes[pos + 2])
-          continue; // minX > nodeMaxX
-        if (minY > m_boxes[pos + 3])
-          continue; // minY > nodeMaxY
+        if (maxX < m_boxes[pos] || maxY < m_boxes[pos + 1] || minX > m_boxes[pos + 2] ||
+            minY > m_boxes[pos + 3]) {
+          // no intersect
+          continue;
+        }
 
         if (nodeIndex < m_numItems * 4) {
           done = !visitor(index);
@@ -301,17 +332,33 @@ private:
   Real m_maxY;
   std::size_t m_numItems;
   std::vector<std::size_t> m_levelBounds;
-  std::vector<Real> m_boxes;
-  std::vector<std::size_t> m_indices;
+  std::size_t m_numNodes;
+  std::unique_ptr<Real[]> m_boxes;
+  std::unique_ptr<std::size_t[]> m_indices;
   std::size_t m_pos;
 
+  static void insertionSort(std::uint32_t *values, Real *boxes, std::size_t *indices,
+                            std::size_t left, std::size_t right) {
+    for (std::size_t i = left; i < right; ++i) {
+      for (std::size_t j = i; j > left && values[j - 1] > values[j]; j--) {
+        swap(values, boxes, indices, j, j - 1);
+      }
+    }
+  }
+
   // quicksort that partially sorts the bounding box data alongside the Hilbert values
-  static void sort(std::vector<std::uint32_t> &values, std::vector<Real> &boxes,
-                   std::vector<std::size_t> &indices, std::size_t left, std::size_t right) {
+  static void sort(std::uint32_t *values, Real *boxes, std::size_t *indices, std::size_t left,
+                   std::size_t right) {
     assert(left <= right);
 
     // check against NodeSize (only need to sort down to NodeSize buckets)
     if (left / NodeSize >= right / NodeSize) {
+      return;
+    }
+
+    if (right - left < 8) {
+      // insertion sort is faster at this point
+      insertionSort(values, boxes, indices, left, right);
       return;
     }
 
@@ -335,8 +382,8 @@ private:
     sort(values, boxes, indices, j + 1, right);
   }
 
-  static void swap(std::vector<std::uint32_t> &values, std::vector<Real> &boxes,
-                   std::vector<std::size_t> &indices, std::size_t i, std::size_t j) {
+  static void swap(std::uint32_t *values, Real *boxes, std::size_t *indices, std::size_t i,
+                   std::size_t j) {
     auto temp = values[i];
     values[i] = values[j];
     values[j] = temp;

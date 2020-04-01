@@ -245,6 +245,8 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
   std::vector<bool> visitedSliceIndexes(slices.size(), false);
 
   std::vector<std::size_t> queryResults;
+  std::vector<std::size_t> queryStack;
+  queryStack.reserve(8);
 
   auto closePline = [&](Polyline<Real> &pline) {
     pline.vertexes().pop_back();
@@ -281,7 +283,7 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
       queryResults.clear();
       spatialIndex.query(currEndPoint.x() - joinThreshold, currEndPoint.y() - joinThreshold,
                          currEndPoint.x() + joinThreshold, currEndPoint.y() + joinThreshold,
-                         queryResults);
+                         queryResults, queryStack);
 
       // skip if only index found corresponds to current index
       queryResults.erase(std::remove_if(queryResults.begin(), queryResults.end(),
