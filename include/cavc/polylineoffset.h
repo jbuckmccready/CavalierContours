@@ -41,7 +41,7 @@ std::vector<PlineOffsetSegment<Real>> createUntrimmedOffsetSegments(Polyline<Rea
 
   auto arcVisitor = [&](PlineVertex<Real> const &v1, PlineVertex<Real> const &v2) {
     auto arc = arcRadiusAndCenter(v1, v2);
-    Real offs = v1.bulge() < Real(0) ? offset : -offset;
+    Real offs = v1.bulgeIsNeg() ? offset : -offset;
     Real radiusAfterOffset = arc.radius + offs;
     Vector2<Real> v1ToCenter = v1.pos() - arc.center;
     normalize(v1ToCenter);
@@ -185,7 +185,7 @@ void lineToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
       Real theta = utils::deltaAngle(a, arcEndAngle);
       // ensure the sign matches (may get flipped if intersect is at the very end of the arc, in
       // which case we do not want to update the bulge)
-      if ((theta > Real(0)) == (u1.bulge() > Real(0))) {
+      if ((theta > Real(0)) == u1.bulgeIsPos()) {
         addOrReplaceIfSamePos(result, PlineVertex<Real>(intersect, std::tan(theta / Real(4))));
       } else {
         addOrReplaceIfSamePos(result, PlineVertex<Real>(intersect, u1.bulge()));
@@ -261,7 +261,7 @@ void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
 
         // ensure the sign matches (may get flipped if intersect is at the very end of the arc, in
         // which case we do not want to update the bulge)
-        if ((updatedPrevTheta > Real(0)) == (prevVertex.bulge() > Real(0))) {
+        if ((updatedPrevTheta > Real(0)) == prevVertex.bulgeIsPos()) {
           result.lastVertex().bulge() = std::tan(updatedPrevTheta / Real(4));
         }
       }
@@ -333,7 +333,7 @@ void arcToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> c
 
         // ensure the sign matches (may get flipped if intersect is at the very end of the arc, in
         // which case we do not want to update the bulge)
-        if ((updatedPrevTheta > Real(0)) == (prevVertex.bulge() > Real(0))) {
+        if ((updatedPrevTheta > Real(0)) == prevVertex.bulgeIsPos()) {
           result.lastVertex().bulge() = std::tan(updatedPrevTheta / Real(4));
         }
       }
@@ -345,7 +345,7 @@ void arcToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> c
 
       // ensure the sign matches (may get flipped if intersect is at the very end of the arc, in
       // which case we do not want to update the bulge)
-      if ((theta > Real(0)) == (u1.bulge() > Real(0))) {
+      if ((theta > Real(0)) == u1.bulgeIsPos()) {
         addOrReplaceIfSamePos(result, PlineVertex<Real>(intersect, std::tan(theta / Real(4))));
       } else {
         addOrReplaceIfSamePos(result, PlineVertex<Real>(intersect, u1.bulge()));
@@ -548,8 +548,8 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
       const Real a1 = angle(arc.center, updatedFirstPos);
       const Real a2 = angle(arc.center, result[1].pos());
       const Real updatedTheta = utils::deltaAngle(a1, a2);
-      if ((updatedTheta < Real(0) && result[0].bulge() > Real(0)) ||
-          (updatedTheta > Real(0) && result[0].bulge() < Real(0))) {
+      if ((updatedTheta < Real(0) && result[0].bulgeIsPos()) ||
+          (updatedTheta > Real(0) && result[0].bulgeIsNeg())) {
         // first vertex not valid, just update its position to be removed later
         result[0].pos() = updatedFirstPos;
       } else {
@@ -1105,9 +1105,10 @@ stitchOffsetSlicesTogether(std::vector<OpenPolylineSlice<Real>> const &slices, b
 
   if (slices.size() == 1) {
     result.emplace_back(slices[0].pline);
-    if (closedPolyline) {
-      result.back().isClosed() = true;
-      result.back().vertexes().pop_back();
+    if (closedPolyline &&
+        fuzzyEqual(result[0][0].pos(), result[0].lastVertex().pos(), joinThreshold)) {
+      result[0].isClosed() = true;
+      result[0].vertexes().pop_back();
     }
 
     return result;
@@ -1136,7 +1137,6 @@ stitchOffsetSlicesTogether(std::vector<OpenPolylineSlice<Real>> const &slices, b
     visitedIndexes[i] = true;
 
     Polyline<Real> currPline;
-    currPline.isClosed() = closedPolyline;
     std::size_t currIndex = i;
     auto const &initialStartPoint = slices[i].pline[0].pos();
     std::size_t loopCount = 0;
@@ -1196,6 +1196,7 @@ stitchOffsetSlicesTogether(std::vector<OpenPolylineSlice<Real>> const &slices, b
           if (closedPolyline && fuzzyEqual(currPline[0].pos(), currPline.lastVertex().pos(),
                                            utils::realPrecision<Real>())) {
             currPline.vertexes().pop_back();
+            currPline.isClosed() = true;
           }
           result.emplace_back(std::move(currPline));
         }

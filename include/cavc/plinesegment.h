@@ -30,6 +30,9 @@ public:
     return std::abs(m_bulge) < epsilon;
   }
 
+  bool bulgeIsNeg() const { return m_bulge < Real(0); }
+  bool bulgeIsPos() const { return m_bulge > Real(0); }
+
   Vector2<Real> const &pos() const { return m_position; }
   Vector2<Real> &pos() { return m_position; }
 
@@ -77,12 +80,12 @@ ArcRadiusAndCenter<Real> arcRadiusAndCenter(PlineVertex<Real> const &v1,
   Real m = r - s;
   Real offsX = -m * v.y() / d;
   Real offsY = m * v.x() / d;
-  if (v1.bulge() < Real(0)) {
+  if (v1.bulgeIsNeg()) {
     offsX = -offsX;
     offsY = -offsY;
   }
 
-  Vector2<Real> c{v1.x() + v.x() / Real(2) + offsX, v1.y() + v.y() / Real(2) + offsY};
+  Vector2<Real> c(v1.x() + v.x() / Real(2) + offsX, v1.y() + v.y() / Real(2) + offsY);
   return ArcRadiusAndCenter<Real>{r, c};
 }
 
@@ -183,10 +186,9 @@ AABB<Real> createFastApproxBoundingBox(PlineVertex<Real> const &v1, PlineVertex<
     return result;
   }
 
-  // For arcs we don't compute the actual extents which requires slow trig functions, instead we
-  // create an approximate bounding box from the rectangle formed by extending the chord by the
-  // sagitta, NOTE: this approximate bounding box is always equal to or bigger than the true
-  // bounding box
+  // For arcs we don't compute the actual extents which is slower, instead we create an approximate
+  // bounding box from the rectangle formed by extending the chord by the sagitta, NOTE: this
+  // approximate bounding box is always equal to or bigger than the true bounding box
   Real b = v1.bulge();
   Real offsX = b * (v2.y() - v1.y()) / Real(2);
   Real offsY = -b * (v2.x() - v1.x()) / Real(2);
@@ -267,7 +269,7 @@ Vector2<Real> segMidpoint(PlineVertex<Real> const &v1, PlineVertex<Real> const &
   Real a2 = angle(arc.center, v2.pos());
   Real angleOffset = std::abs(utils::deltaAngle(a1, a2) / Real(2));
   // use arc direction to determine offset sign to robustly handle half circles
-  Real midAngle = v1.bulge() > Real(0) ? a1 + angleOffset : a1 - angleOffset;
+  Real midAngle = v1.bulgeIsPos() ? a1 + angleOffset : a1 - angleOffset;
   return pointOnCircle(arc.radius, arc.center, midAngle);
 }
 
@@ -419,7 +421,7 @@ IntrPlineSegsResult<Real> intrPlineSegs(PlineVertex<Real> const &v1, PlineVertex
       auto arc1StartAndSweep = startAndSweepAngle(v1.pos(), arc1.center, v1.bulge());
       // we have the arcs go the same direction to simplify checks
       auto arc2StartAndSweep = [&] {
-        if ((v1.bulge() < Real(0)) == (u1.bulge() < Real(0))) {
+        if (v1.bulgeIsNeg() == u1.bulgeIsNeg()) {
           return startAndSweepAngle(u1.pos(), arc2.center, u1.bulge());
         }
 

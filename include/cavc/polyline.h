@@ -61,72 +61,167 @@ private:
   std::vector<PVertex> m_vertexes;
 };
 
-/// Compute the extents of a polyline.
+
+template <typename Real> void scalePolyline(Polyline<Real> &pline, Real scaleFactor) {
+  for (auto &v : pline.vertexes()) {
+    v = PlineVertex<Real>(scaleFactor * v.pos(), v.bulge());
+  }
+}
+
+/// Compute the extents of a polyline, if there are no vertexes than -infinity to infinity bounding
+/// box is returned.
 template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
-  if (pline.vertexes().size() < 2) {
-    return AABB<Real>{pline[0].x(), pline[0].y(), pline[0].x(), pline[0].y()};
+
+  if (pline.size() == 0) {
+    return {std::numeric_limits<Real>::infinity(), std::numeric_limits<Real>::infinity(),
+            -std::numeric_limits<Real>::infinity(), -std::numeric_limits<Real>::infinity()};
   }
 
-  AABB<Real> result{std::numeric_limits<Real>::infinity(), std::numeric_limits<Real>::infinity(),
-                    -std::numeric_limits<Real>::infinity(), -std::numeric_limits<Real>::infinity()};
+  AABB<Real> result{pline[0].x(), pline[0].y(), pline[0].x(), pline[0].y()};
 
   auto visitor = [&](std::size_t i, std::size_t j) {
-    PlineVertex<Real> const &v1 = pline[i];
-    if (v1.bulgeIsZero()) {
-      if (v1.x() < result.xMin)
-        result.xMin = v1.x();
-      if (v1.y() < result.yMin)
-        result.yMin = v1.y();
-      if (v1.x() > result.xMax)
-        result.xMax = v1.x();
-      if (v1.y() > result.yMax)
-        result.yMax = v1.y();
+    PlineVertex<Real> const &v2 = pline[j];
+    if (v2.bulgeIsZero()) {
+      if (v2.x() < result.xMin) {
+        result.xMin = v2.x();
+      } else if (v2.x() > result.xMax) {
+        result.xMax = v2.x();
+      }
+
+      if (v2.y() < result.yMin) {
+        result.yMin = v2.y();
+      } else if (v2.y() > result.yMax) {
+        result.yMax = v2.y();
+      }
+
     } else {
-      PlineVertex<Real> const &v2 = pline[j];
+      PlineVertex<Real> const &v1 = pline[i];
+      AABB<Real> arcBB;
+      // bounds of chord
+      if (v1.x() < v2.x()) {
+        arcBB.xMin = v1.x();
+        arcBB.xMax = v2.x();
+      } else {
+        arcBB.xMin = v2.x();
+        arcBB.xMax = v1.x();
+      }
+
+      if (v1.y() < v2.y()) {
+        arcBB.yMin = v1.y();
+        arcBB.yMax = v2.y();
+      } else {
+        arcBB.yMin = v2.y();
+        arcBB.yMax = v1.y();
+      }
+
+      // it's an arc segment, find axes crossings (with origin at arc center) to determine full
+      // extents
       auto arc = arcRadiusAndCenter(v1, v2);
+      auto circleXMaxPt = Vector2<Real>(arc.center.x() + arc.radius, arc.center.y());
+      auto circleYMaxPt = Vector2<Real>(arc.center.x(), arc.center.y() + arc.radius);
 
-      Real startAngle = angle(arc.center, v1.pos());
-      Real endAngle = angle(arc.center, v2.pos());
-      Real sweepAngle = utils::deltaAngle(startAngle, endAngle);
+      auto getQuadrant = [&](auto const &pt) {
+        if (isLeft(arc.center, circleXMaxPt, pt)) {
+          // quadrant 1 or 2
+          if (isLeft(arc.center, circleYMaxPt, pt)) {
+            // quadrant 2
+            return 2;
+          }
+          // else quadrant 1
+          return 1;
+        } else {
+          // quadrant 3 or 4
+          if (isLeft(arc.center, circleYMaxPt, pt)) {
+            // quadrant 3
+            return 3;
+          }
+          // else qudrant 4
+          return 4;
+        }
+      };
 
-      Real arcXMin, arcYMin, arcXMax, arcYMax;
+      int startPtQuad = getQuadrant(v1.pos());
+      int endPtQuad = getQuadrant(v2.pos());
 
-      // crosses PI/2
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(0.5) * utils::pi<Real>())) {
-        arcYMax = arc.center.y() + arc.radius;
+      if (startPtQuad == 1) {
+        if (endPtQuad == 2) {
+          // crosses YMax
+          arcBB.yMax = circleYMaxPt.y();
+        } else if (endPtQuad == 3) {
+          if (v1.bulgeIsNeg()) {
+            // crosses xMax then yMin
+            arcBB.xMax = circleXMaxPt.x();
+            arcBB.yMin = arc.center.y() - arc.radius;
+          } else {
+            // crosses yMax then xMin
+            arcBB.yMax = circleYMaxPt.y();
+            arcBB.xMin = arc.center.x() - arc.radius;
+          }
+        } else if (endPtQuad == 4) {
+          // crosses XMax
+          arcBB.xMax = circleXMaxPt.x();
+        }
+      } else if (startPtQuad == 2) {
+        if (endPtQuad == 1) {
+          // crosses yMax
+          arcBB.yMax = circleYMaxPt.y();
+        } else if (endPtQuad == 3) {
+          // crosses xMin
+          arcBB.xMin = arc.center.x() - arc.radius;
+        } else if (endPtQuad == 4) {
+          if (v1.bulgeIsNeg()) {
+            // crosses yMax then xMax
+            arcBB.yMax = circleYMaxPt.y();
+            arcBB.xMax = circleXMaxPt.x();
+          } else {
+            // crosses xMin then yMin
+            arcBB.xMin = arc.center.x() - arc.radius;
+            arcBB.yMin = arc.center.y() - arc.radius;
+          }
+        }
+      } else if (startPtQuad == 3) {
+        if (endPtQuad == 1) {
+          if (v1.bulgeIsNeg()) {
+            // crosses xMin then yMax
+            arcBB.xMin = arc.center.x() - arc.radius;
+            arcBB.yMax = circleYMaxPt.y();
+          } else {
+            // crosses yMin then xMax
+            arcBB.yMin = arc.center.y() - arc.radius;
+            arcBB.xMax = circleXMaxPt.x();
+          }
+        } else if (endPtQuad == 2) {
+          // crosses xMin
+          arcBB.xMin = arc.center.x() - arc.radius;
+        } else if (endPtQuad == 4) {
+          // crosses yMin
+          arcBB.yMin = arc.center.y() - arc.radius;
+        }
       } else {
-        arcYMax = std::max(v1.y(), v2.y());
+        assert(startPtQuad == 4);
+        if (endPtQuad == 1) {
+          // crosses xMax
+          arcBB.xMax = circleXMaxPt.x();
+        } else if (endPtQuad == 2) {
+          if (v1.bulgeIsNeg()) {
+            // crosses yMin then xMin
+            arcBB.yMin = arc.center.y() - arc.radius;
+            arcBB.xMin = arc.center.x() - arc.radius;
+          } else {
+            // crossses xMax then yMax
+            arcBB.xMax = circleXMaxPt.x();
+            arcBB.yMax = circleYMaxPt.y();
+          }
+        } else if (endPtQuad == 3) {
+          // crosses yMin
+          arcBB.yMin = arc.center.y() - arc.radius;
+        }
       }
 
-      // crosses PI
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, utils::pi<Real>())) {
-        arcXMin = arc.center.x() - arc.radius;
-      } else {
-        arcXMin = std::min(v1.x(), v2.x());
-      }
-
-      // crosses 3PI/2
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(1.5) * utils::pi<Real>())) {
-        arcYMin = arc.center.y() - arc.radius;
-      } else {
-        arcYMin = std::min(v1.y(), v2.y());
-      }
-
-      // crosses 2PI
-      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(2) * utils::pi<Real>())) {
-        arcXMax = arc.center.x() + arc.radius;
-      } else {
-        arcXMax = std::max(v1.x(), v2.x());
-      }
-
-      if (arcXMin < result.xMin)
-        result.xMin = arcXMin;
-      if (arcYMin < result.yMin)
-        result.yMin = arcYMin;
-      if (arcXMax > result.xMax)
-        result.xMax = arcXMax;
-      if (arcYMax > result.yMax)
-        result.yMax = arcYMax;
+      result.xMin = std::min(result.xMin, arcBB.xMin);
+      result.yMin = std::min(result.yMin, arcBB.yMin);
+      result.xMax = std::max(result.xMax, arcBB.xMax);
+      result.yMax = std::max(result.yMax, arcBB.yMax);
     }
 
     // return true to iterate all segments
@@ -153,13 +248,12 @@ template <typename Real> Real getArea(Polyline<Real> const &pline) {
     return Real(0);
   }
 
-  Real doubleEdgeAreaTotal = Real(0);
-  Real doubleArcSegAreaTotal = Real(0);
+  Real doubleAreaTotal = Real(0);
 
   auto visitor = [&](std::size_t i, std::size_t j) {
-    doubleEdgeAreaTotal += pline[i].x() * pline[j].y() - pline[i].y() * pline[j].x();
+    Real doubleArea = pline[i].x() * pline[j].y() - pline[i].y() * pline[j].x();
     if (!pline[i].bulgeIsZero()) {
-      // add segment area
+      // add arc segment area
       Real b = std::abs(pline[i].bulge());
       Real sweepAngle = Real(4) * std::atan(b);
       Real triangleBase = length(pline[j].pos() - pline[i].pos());
@@ -169,12 +263,14 @@ template <typename Real> Real getArea(Polyline<Real> const &pline) {
       Real doubleSectorArea = sweepAngle * radius * radius;
       Real doubleTriangleArea = triangleBase * triangleHeight;
       Real doubleArcSegArea = doubleSectorArea - doubleTriangleArea;
-      if (pline[i].bulge() < Real(0)) {
+      if (pline[i].bulgeIsNeg()) {
         doubleArcSegArea = -doubleArcSegArea;
       }
 
-      doubleArcSegAreaTotal += doubleArcSegArea;
+      doubleArea += doubleArcSegArea;
     }
+
+    doubleAreaTotal += doubleArea;
 
     // iterate all segments
     return true;
@@ -182,7 +278,7 @@ template <typename Real> Real getArea(Polyline<Real> const &pline) {
 
   pline.visitSegIndices(visitor);
 
-  return (doubleEdgeAreaTotal + doubleArcSegAreaTotal) / Real(2);
+  return doubleAreaTotal / Real(2);
 }
 
 /// Class to compute the closest point and starting vertex index from a polyline to a point given.
@@ -264,7 +360,7 @@ Polyline<Real> convertArcsToLines(Polyline<Real> const &pline, Real error) {
       // update segment subangle for equal length segments
       segmentSubAngle = deltaAngle / segmentCount;
 
-      if (v1.bulge() < Real(0)) {
+      if (v1.bulgeIsNeg()) {
         segmentSubAngle = -segmentSubAngle;
       }
       // add the start point
@@ -410,7 +506,7 @@ int getWindingNumber(Polyline<Real> const &pline, Vector2<Real> const &point) {
   };
 
   auto arcVisitor = [&](const auto &v1, const auto &v2) {
-    bool isCCW = v1.bulge() > Real(0);
+    bool isCCW = v1.bulgeIsPos();
     bool pointIsLeft = isLeft(v1.pos(), v2.pos(), point);
 
     if (v1.y() <= point.y()) {
