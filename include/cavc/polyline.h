@@ -62,9 +62,17 @@ private:
 };
 
 
+/// Scale X and Y of polyline by scaleFactor.
 template <typename Real> void scalePolyline(Polyline<Real> &pline, Real scaleFactor) {
   for (auto &v : pline.vertexes()) {
     v = PlineVertex<Real>(scaleFactor * v.pos(), v.bulge());
+  }
+}
+
+/// Translate the polyline by some offset vector.
+template <typename Real> void translatePolyline(Polyline<Real> &pline, Vector2<Real> const &offset) {
+  for (auto &v : pline.vertexes()) {
+    v = PlineVertex<Real>(offset.x() + v.x(), offset.y() + v.y(), v.bulge());
   }
 }
 
