@@ -48,10 +48,10 @@ public:
     m_maxY = -std::numeric_limits<Real>::infinity();
   }
 
-  Real MinX() const { return m_minX; }
-  Real MinY() const { return m_minY; }
-  Real MaxX() const { return m_maxX; }
-  Real MaxY() const { return m_maxY; }
+  Real minX() const { return m_minX; }
+  Real minY() const { return m_minY; }
+  Real maxX() const { return m_maxX; }
+  Real maxY() const { return m_maxY; }
 
   void add(Real minX, Real minY, Real maxX, Real maxY) {
     std::size_t index = m_pos >> 2;
@@ -155,7 +155,8 @@ public:
   }
 
   // Visit all the bounding boxes in the spatial index. Visitor function has the signature
-  // void(Real xmin, Real ymin, Real xmax, Real ymax, std::size_t level).
+  // bool(std::size_t level, Real xmin, Real ymin, Real xmax, Real ymax, std::size_t level).
+  // Visiting stops early if false is returned.
   template <typename F> void visitBoundingBoxes(F &&visitor) const {
     std::size_t nodeIndex = 4 * m_numNodes - 4;
     std::size_t level = m_levelBounds.size() - 1;
@@ -168,7 +169,9 @@ public:
       auto end = std::min(nodeIndex + NodeSize * 4, m_levelBounds[level]);
       for (std::size_t pos = nodeIndex; pos < end; pos += 4) {
         auto index = m_indices[pos >> 2];
-        visitor(m_boxes[pos], m_boxes[pos + 1], m_boxes[pos + 2], m_boxes[pos + 3], level);
+        if (!visitor(level, m_boxes[pos], m_boxes[pos + 1], m_boxes[pos + 2], m_boxes[pos + 3])) {
+          return;
+        }
 
         if (nodeIndex >= m_numItems * 4) {
           stack.push_back(index);
@@ -183,6 +186,17 @@ public:
         stack.pop_back();
       } else {
         done = true;
+      }
+    }
+  }
+
+  // Visit only the item bounding boxes in the spatial index. Visitor function has the signature
+  // bool(std::size_t index, Real xmin, Real ymin, Real xmax, Real ymax). Visiting stops early if
+  // false is returned.
+  template <typename F> void visitItemBoxes(F &&visitor) const {
+    for (std::size_t i = 0; i < m_levelBounds[0]; i += 4) {
+      if (!visitor(m_indices[i >> 2], m_boxes[i], m_boxes[i + 1], m_boxes[i + 2], m_boxes[i + 3])) {
+        return;
       }
     }
   }

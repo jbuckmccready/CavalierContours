@@ -279,10 +279,12 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
 
   std::vector<std::size_t> queryStack;
   queryStack.reserve(8);
-  auto visitor = [&](std::size_t i, std::size_t j) {
+
+  auto visitor = [&](std::size_t i, Real minX, Real minY, Real maxX, Real maxY) {
+    std::size_t j = utils::nextWrappingIndex(i, pline);
     const PlineVertex<Real> &v1 = pline[i];
     const PlineVertex<Real> &v2 = pline[j];
-    AABB<Real> envelope = createFastApproxBoundingBox(v1, v2);
+    AABB<Real> envelope{minX, minY, maxX, maxY};
     envelope.expand(utils::realThreshold<Real>());
     auto indexVisitor = [&](std::size_t hitIndexStart) {
       std::size_t hitIndexEnd = utils::nextWrappingIndex(hitIndexStart, pline);
@@ -346,7 +348,7 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
     return true;
   };
 
-  pline.visitSegIndices(visitor);
+  spatialIndex.visitItemBoxes(visitor);
 }
 
 /// Finds all self intersects of the polyline (equivalent to calling localSelfIntersects and
@@ -366,7 +368,7 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
   std::vector<std::size_t> queryResults;
   std::vector<std::size_t> queryStack;
   queryStack.reserve(8);
-  std::unordered_set<std::pair<std::size_t, std::size_t>, utils::IndexPairHash> possibleDuplicate;
+  std::unordered_set<std::pair<std::size_t, std::size_t>, utils::IndexPairHash> possibleDuplicates;
 
   auto &intrs = output.intersects;
   auto &coincidentIntrs = output.coincidentIntersects;
@@ -412,11 +414,11 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
         coincidentIntrs.emplace_back(i1, i2, intrResult.point1, intrResult.point2);
         if (fuzzyEqual(p1v1.pos(), intrResult.point1) ||
             fuzzyEqual(p1v1.pos(), intrResult.point2)) {
-          possibleDuplicate.insert(std::make_pair(utils::prevWrappingIndex(i1, pline1), i2));
+          possibleDuplicates.insert(std::make_pair(utils::prevWrappingIndex(i1, pline1), i2));
         }
         if (fuzzyEqual(p2v1.pos(), intrResult.point1) ||
             fuzzyEqual(p2v1.pos(), intrResult.point2)) {
-          possibleDuplicate.insert(std::make_pair(i1, utils::prevWrappingIndex(i2, pline2)));
+          possibleDuplicates.insert(std::make_pair(i1, utils::prevWrappingIndex(i2, pline2)));
         }
         break;
       }
@@ -431,9 +433,9 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
   // remove duplicate points caused by the coincident intersect definition
   intrs.erase(std::remove_if(intrs.begin(), intrs.end(),
                              [&](auto const &intr) {
-                               auto found = possibleDuplicate.find(
+                               auto found = possibleDuplicates.find(
                                    std::make_pair(intr.sIndex1, intr.sIndex2));
-                               if (found == possibleDuplicate.end()) {
+                               if (found == possibleDuplicates.end()) {
                                  return false;
                                }
 
