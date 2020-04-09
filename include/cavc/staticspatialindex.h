@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <stack>
 #include <vector>
 
