@@ -81,6 +81,7 @@ bool isLeft(Vector2<Real> const &p0, Vector2<Real> const &p1, Vector2<Real> cons
          Real(0);
 }
 
+/// Same as isLeft but uses <= operator rather than < for boundary inclusion.
 template <typename Real>
 bool isLeftOrEqual(Vector2<Real> const &p0, Vector2<Real> const &p1, Vector2<Real> const &point) {
   return (p1.x() - p0.x()) * (point.y() - p0.y()) - (p1.y() - p0.y()) * (point.x() - p0.x()) >=

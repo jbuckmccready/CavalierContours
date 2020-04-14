@@ -158,9 +158,6 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
         }
       };
 
-      int startPtQuad;
-      int endPtQuad;
-
       // must check if arc is an axis aligned half circle, in which case the isLeft checks will fail
       // at the boundaries so we must handle as special case
       if (utils::fuzzyEqual(v1.x(), arc.center.x())) {
@@ -181,8 +178,8 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
         }
       } else {
         // not axis aligned, use isLeft checks to find quadrants and crossings
-        startPtQuad = getQuadrant(v1.pos());
-        endPtQuad = getQuadrant(v2.pos());
+        const int startPtQuad = getQuadrant(v1.pos());
+        const int endPtQuad = getQuadrant(v2.pos());
         if (startPtQuad == 1) {
           if (endPtQuad == 2) {
             // crosses YMax
@@ -357,11 +354,9 @@ public:
 
     pline.visitSegIndices(visitor);
     // check if index is offset (due to point being ontop of vertex)
-    if (pline.isClosed() || m_index != pline.size() - 1) {
-      std::size_t prevIndex = utils::nextWrappingIndex(m_index, pline);
-      if (fuzzyEqual(m_point, pline[prevIndex].pos())) {
-        m_index = prevIndex;
-      }
+    std::size_t nextIndex = utils::nextWrappingIndex(m_index, pline);
+    if (fuzzyEqual(m_point, pline[nextIndex].pos())) {
+      m_index = nextIndex;
     }
     // we used the squared distance while iterating and comparing, take sqrt for actual distance
     m_distance = std::sqrt(m_distance);
