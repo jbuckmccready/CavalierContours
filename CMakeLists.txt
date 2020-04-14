@@ -1,7 +1,53 @@
 cmake_minimum_required(VERSION 3.5)
 
-add_library(CavalierContours INTERFACE)
-target_include_directories(CavalierContours
+# detect if CavalierContours is a subproject or not
+# do not include examples, tests, and benchmarks in that case
+if (NOT DEFINED PROJECT_NAME)
+  set(NOT_SUBPROJECT ON)
+endif()
+
+
+project(CavalierContours VERSION 0.1)
+
+option(CAVC_HEADER_ONLY "do not build any libraries just make cpp header only library available" OFF)
+option(CAVC_BUILD_SHARED_LIB "build the c api as a shared library, if OFF and CAVC_HEADER_ONLY OFF then static library will be built" ON)
+
+if(CAVC_HEADER_ONLY)
+  set(CAVC_CPP_HEADER_ONLY_LIB ${PROJECT_NAME})
+else()
+  set(CAVC_CPP_HEADER_ONLY_LIB ${PROJECT_NAME}_header_only)
+  set(CAVC_C_API_LIB ${PROJECT_NAME})
+endif()
+
+
+
+add_library(${CAVC_CPP_HEADER_ONLY_LIB} INTERFACE)
+target_include_directories(${CAVC_CPP_HEADER_ONLY_LIB}
   INTERFACE include/)
 
-add_subdirectory(examples)
+if(NOT CAVC_HEADER_ONLY)
+  if (CAVC_BUILD_SHARED_LIB)
+    add_library(${CAVC_C_API_LIB}
+      SHARED src/cavaliercontours.cpp)
+  else()
+    add_library(${CAVC_C_API_LIB}
+      STATIC src/cavaliercontours.cpp)
+    target_compile_definitions(${CAVC_C_API_LIB}
+      PUBLIC CAVC_STATIC_LIB)
+  endif()
+  target_compile_definitions(${CAVC_C_API_LIB}
+    PRIVATE CAVC_EXPORTS)
+  target_include_directories(${CAVC_C_API_LIB}
+    PUBLIC c_api_include/)
+  target_link_libraries(${CAVC_C_API_LIB}
+    PRIVATE ${CAVC_CPP_HEADER_ONLY_LIB})
+endif()
+
+if (NOT_SUBPROJECT)
+  # output all libraries and executables to the root build dir for simplicity in running tests with dynamic libs
+  set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+  set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+  include(CTest)
+  add_subdirectory(examples)
+  add_subdirectory(tests)
+endif()

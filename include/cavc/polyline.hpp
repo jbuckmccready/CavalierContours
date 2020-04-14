@@ -1,11 +1,11 @@
-#ifndef CAVC_POLYLINE_H
-#define CAVC_POLYLINE_H
-#include "intrcircle2circle2.h"
-#include "intrlineseg2circle2.h"
-#include "intrlineseg2lineseg2.h"
-#include "plinesegment.h"
-#include "staticspatialindex.h"
-#include "vector2.h"
+#ifndef CAVC_POLYLINE_HPP
+#define CAVC_POLYLINE_HPP
+#include "intrcircle2circle2.hpp"
+#include "intrlineseg2circle2.hpp"
+#include "intrlineseg2lineseg2.hpp"
+#include "plinesegment.hpp"
+#include "staticspatialindex.hpp"
+#include "vector2.hpp"
 #include <algorithm>
 #include <vector>
 
@@ -61,7 +61,6 @@ private:
   std::vector<PVertex> m_vertexes;
 };
 
-
 /// Scale X and Y of polyline by scaleFactor.
 template <typename Real> void scalePolyline(Polyline<Real> &pline, Real scaleFactor) {
   for (auto &v : pline.vertexes()) {
@@ -70,7 +69,8 @@ template <typename Real> void scalePolyline(Polyline<Real> &pline, Real scaleFac
 }
 
 /// Translate the polyline by some offset vector.
-template <typename Real> void translatePolyline(Polyline<Real> &pline, Vector2<Real> const &offset) {
+template <typename Real>
+void translatePolyline(Polyline<Real> &pline, Vector2<Real> const &offset) {
   for (auto &v : pline.vertexes()) {
     v = PlineVertex<Real>(offset.x() + v.x(), offset.y() + v.y(), v.bulge());
   }
@@ -129,6 +129,16 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
       auto circleYMaxPt = Vector2<Real>(arc.center.x(), arc.center.y() + arc.radius);
 
       auto getQuadrant = [&](auto const &pt) {
+        // check axis aligned half circle boundary cases
+        if (utils::fuzzyEqual(pt.x(), arc.center.x())) {
+          // point lies on circle y axis
+        }
+
+        if (utils::fuzzyEqual(pt.y(), arc.center.y())) {
+          // point lies on circle x axis
+        }
+
+        // non-boundary case
         if (isLeft(arc.center, circleXMaxPt, pt)) {
           // quadrant 1 or 2
           if (isLeft(arc.center, circleYMaxPt, pt)) {
@@ -148,81 +158,104 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
         }
       };
 
-      int startPtQuad = getQuadrant(v1.pos());
-      int endPtQuad = getQuadrant(v2.pos());
+      int startPtQuad;
+      int endPtQuad;
 
-      if (startPtQuad == 1) {
-        if (endPtQuad == 2) {
-          // crosses YMax
-          arcBB.yMax = circleYMaxPt.y();
-        } else if (endPtQuad == 3) {
-          if (v1.bulgeIsNeg()) {
-            // crosses xMax then yMin
-            arcBB.xMax = circleXMaxPt.x();
-            arcBB.yMin = arc.center.y() - arc.radius;
-          } else {
-            // crosses yMax then xMin
-            arcBB.yMax = circleYMaxPt.y();
-            arcBB.xMin = arc.center.x() - arc.radius;
-          }
-        } else if (endPtQuad == 4) {
-          // crosses XMax
+      // must check if arc is an axis aligned half circle, in which case the isLeft checks will fail
+      // at the boundaries so we must handle as special case
+      if (utils::fuzzyEqual(v1.x(), arc.center.x())) {
+        // y axis aligned half circle
+        const bool updateXMin = (v1.y() > v2.y()) ^ (v1.bulgeIsNeg());
+        if (updateXMin) {
+          arcBB.xMin = arc.center.x() - arc.radius;
+        } else {
           arcBB.xMax = circleXMaxPt.x();
         }
-      } else if (startPtQuad == 2) {
-        if (endPtQuad == 1) {
-          // crosses yMax
-          arcBB.yMax = circleYMaxPt.y();
-        } else if (endPtQuad == 3) {
-          // crosses xMin
-          arcBB.xMin = arc.center.x() - arc.radius;
-        } else if (endPtQuad == 4) {
-          if (v1.bulgeIsNeg()) {
-            // crosses yMax then xMax
-            arcBB.yMax = circleYMaxPt.y();
-            arcBB.xMax = circleXMaxPt.x();
-          } else {
-            // crosses xMin then yMin
-            arcBB.xMin = arc.center.x() - arc.radius;
-            arcBB.yMin = arc.center.y() - arc.radius;
-          }
-        }
-      } else if (startPtQuad == 3) {
-        if (endPtQuad == 1) {
-          if (v1.bulgeIsNeg()) {
-            // crosses xMin then yMax
-            arcBB.xMin = arc.center.x() - arc.radius;
-            arcBB.yMax = circleYMaxPt.y();
-          } else {
-            // crosses yMin then xMax
-            arcBB.yMin = arc.center.y() - arc.radius;
-            arcBB.xMax = circleXMaxPt.x();
-          }
-        } else if (endPtQuad == 2) {
-          // crosses xMin
-          arcBB.xMin = arc.center.x() - arc.radius;
-        } else if (endPtQuad == 4) {
-          // crosses yMin
+      } else if (utils::fuzzyEqual(v1.y(), arc.center.y())) {
+        // x axis aligned half circle
+        const bool updateYMin = (v1.x() > v2.x()) ^ (v1.bulgeIsPos());
+        if (updateYMin) {
           arcBB.yMin = arc.center.y() - arc.radius;
+        } else {
+          arcBB.yMax = circleYMaxPt.y();
         }
       } else {
-        assert(startPtQuad == 4);
-        if (endPtQuad == 1) {
-          // crosses xMax
-          arcBB.xMax = circleXMaxPt.x();
-        } else if (endPtQuad == 2) {
-          if (v1.bulgeIsNeg()) {
-            // crosses yMin then xMin
-            arcBB.yMin = arc.center.y() - arc.radius;
-            arcBB.xMin = arc.center.x() - arc.radius;
-          } else {
-            // crossses xMax then yMax
-            arcBB.xMax = circleXMaxPt.x();
+        // not axis aligned, use isLeft checks to find quadrants and crossings
+        startPtQuad = getQuadrant(v1.pos());
+        endPtQuad = getQuadrant(v2.pos());
+        if (startPtQuad == 1) {
+          if (endPtQuad == 2) {
+            // crosses YMax
             arcBB.yMax = circleYMaxPt.y();
+          } else if (endPtQuad == 3) {
+            if (v1.bulgeIsNeg()) {
+              // crosses xMax then yMin
+              arcBB.xMax = circleXMaxPt.x();
+              arcBB.yMin = arc.center.y() - arc.radius;
+            } else {
+              // crosses yMax then xMin
+              arcBB.yMax = circleYMaxPt.y();
+              arcBB.xMin = arc.center.x() - arc.radius;
+            }
+          } else if (endPtQuad == 4) {
+            // crosses XMax
+            arcBB.xMax = circleXMaxPt.x();
           }
-        } else if (endPtQuad == 3) {
-          // crosses yMin
-          arcBB.yMin = arc.center.y() - arc.radius;
+        } else if (startPtQuad == 2) {
+          if (endPtQuad == 1) {
+            // crosses yMax
+            arcBB.yMax = circleYMaxPt.y();
+          } else if (endPtQuad == 3) {
+            // crosses xMin
+            arcBB.xMin = arc.center.x() - arc.radius;
+          } else if (endPtQuad == 4) {
+            if (v1.bulgeIsNeg()) {
+              // crosses yMax then xMax
+              arcBB.yMax = circleYMaxPt.y();
+              arcBB.xMax = circleXMaxPt.x();
+            } else {
+              // crosses xMin then yMin
+              arcBB.xMin = arc.center.x() - arc.radius;
+              arcBB.yMin = arc.center.y() - arc.radius;
+            }
+          }
+        } else if (startPtQuad == 3) {
+          if (endPtQuad == 1) {
+            if (v1.bulgeIsNeg()) {
+              // crosses xMin then yMax
+              arcBB.xMin = arc.center.x() - arc.radius;
+              arcBB.yMax = circleYMaxPt.y();
+            } else {
+              // crosses yMin then xMax
+              arcBB.yMin = arc.center.y() - arc.radius;
+              arcBB.xMax = circleXMaxPt.x();
+            }
+          } else if (endPtQuad == 2) {
+            // crosses xMin
+            arcBB.xMin = arc.center.x() - arc.radius;
+          } else if (endPtQuad == 4) {
+            // crosses yMin
+            arcBB.yMin = arc.center.y() - arc.radius;
+          }
+        } else {
+          CAVC_ASSERT(startPtQuad == 4, "shouldn't get here without start pt in quadrant 4");
+          if (endPtQuad == 1) {
+            // crosses xMax
+            arcBB.xMax = circleXMaxPt.x();
+          } else if (endPtQuad == 2) {
+            if (v1.bulgeIsNeg()) {
+              // crosses yMin then xMin
+              arcBB.yMin = arc.center.y() - arc.radius;
+              arcBB.xMin = arc.center.x() - arc.radius;
+            } else {
+              // crossses xMax then yMax
+              arcBB.xMax = circleXMaxPt.x();
+              arcBB.yMax = circleYMaxPt.y();
+            }
+          } else if (endPtQuad == 3) {
+            // crosses yMin
+            arcBB.yMin = arc.center.y() - arc.radius;
+          }
         }
       }
 
@@ -252,7 +285,8 @@ template <typename Real> Real getArea(Polyline<Real> const &pline) {
   // if it is a clockwise arc. The area of the circular segments are computed by finding the area of
   // the arc sector minus the area of the triangle defined by the chord and center of circle.
   // See https://en.wikipedia.org/wiki/Circular_segment
-  if (!pline.isClosed() || pline.size() < 2) {
+  if ((!pline.isClosed() && !(fuzzyEqual(pline[0].pos(), pline.lastVertex().pos()))) ||
+      pline.size() < 2) {
     return Real(0);
   }
 
@@ -298,10 +332,10 @@ public:
   }
 
   void compute(Polyline<Real> const &pline, Vector2<Real> const &point) {
-    assert(pline.vertexes().size() > 0 && "empty polyline has no closest point");
+    CAVC_ASSERT(pline.vertexes().size() > 0, "empty polyline has no closest point");
     if (pline.vertexes().size() == 1) {
       m_index = 0;
-      m_distance = length(pline[0].pos() - pline[0].pos());
+      m_distance = length(point - pline[0].pos());
       return;
     }
 
@@ -322,6 +356,13 @@ public:
     };
 
     pline.visitSegIndices(visitor);
+    // check if index is offset (due to point being ontop of vertex)
+    if (pline.isClosed() || m_index != pline.size() - 1) {
+      std::size_t prevIndex = utils::nextWrappingIndex(m_index, pline);
+      if (fuzzyEqual(m_point, pline[prevIndex].pos())) {
+        m_index = prevIndex;
+      }
+    }
     // we used the squared distance while iterating and comparing, take sqrt for actual distance
     m_distance = std::sqrt(m_distance);
   }
@@ -449,7 +490,7 @@ template <typename Real> void invertDirection(Polyline<Real> &pline) {
 /// createFastApproxBoundingBox.
 template <typename Real>
 StaticSpatialIndex<Real> createApproxSpatialIndex(Polyline<Real> const &pline) {
-  assert(pline.size() > 1 && "need at least 2 vertexes to form segments for spatial index");
+  CAVC_ASSERT(pline.size() > 1, "need at least 2 vertexes to form segments for spatial index");
 
   std::size_t segmentCount = pline.isClosed() ? pline.size() : pline.size() - 1;
   StaticSpatialIndex<Real> result(segmentCount);
@@ -515,7 +556,11 @@ int getWindingNumber(Polyline<Real> const &pline, Vector2<Real> const &point) {
 
   auto arcVisitor = [&](const auto &v1, const auto &v2) {
     bool isCCW = v1.bulgeIsPos();
-    bool pointIsLeft = isLeft(v1.pos(), v2.pos(), point);
+    // to robustly handle the case where point is on the chord of an x axis aligned arc we must
+    // count it as left going one direction and not left going the other (similar to using <= for
+    // end points)
+    bool pointIsLeft =
+        isCCW ? isLeft(v1.pos(), v2.pos(), point) : isLeftOrEqual(v1.pos(), v2.pos(), point);
 
     if (v1.y() <= point.y()) {
       if (v2.y() > point.y()) {
@@ -629,4 +674,4 @@ void addOrReplaceIfSamePos(Polyline<Real> &pline, PlineVertex<Real> const &verte
 
 } // namespace cavc
 
-#endif // CAVC_POLYLINE_H
+#endif // CAVC_POLYLINE_HPP

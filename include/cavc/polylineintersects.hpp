@@ -1,8 +1,8 @@
-#ifndef CAVC_POLYLINEINTERSECTS_H
-#define CAVC_POLYLINEINTERSECTS_H
-#include "mathutils.h"
-#include "polyline.h"
-#include "vector2.h"
+#ifndef CAVC_POLYLINEINTERSECTS_HPP
+#define CAVC_POLYLINEINTERSECTS_HPP
+#include "mathutils.hpp"
+#include "polyline.hpp"
+#include "vector2.hpp"
 #include <unordered_set>
 #include <vector>
 
@@ -274,7 +274,8 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
     return;
   }
 
-  std::unordered_set<std::pair<std::size_t, std::size_t>, utils::IndexPairHash> visitedSegmentPairs;
+  std::unordered_set<std::pair<std::size_t, std::size_t>, internal::IndexPairHash>
+      visitedSegmentPairs;
   visitedSegmentPairs.reserve(pline.size());
 
   std::vector<std::size_t> queryStack;
@@ -368,7 +369,8 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
   std::vector<std::size_t> queryResults;
   std::vector<std::size_t> queryStack;
   queryStack.reserve(8);
-  std::unordered_set<std::pair<std::size_t, std::size_t>, utils::IndexPairHash> possibleDuplicates;
+  std::unordered_set<std::pair<std::size_t, std::size_t>, internal::IndexPairHash>
+      possibleDuplicates;
 
   auto &intrs = output.intersects;
   auto &coincidentIntrs = output.coincidentIntersects;
@@ -453,4 +455,4 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
 }
 
 } // namespace cavc
-#endif // CAVC_POLYLINEINTERSECTS_H
+#endif // CAVC_POLYLINEINTERSECTS_HPP

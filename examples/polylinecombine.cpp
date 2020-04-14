@@ -1,4 +1,4 @@
-#include "cavc/polylinecombine.h"
+#include "cavc/polylinecombine.hpp"
 
 using namespace cavc;
 

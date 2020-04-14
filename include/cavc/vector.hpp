@@ -1,6 +1,6 @@
-#ifndef CAVC_VECTOR_H
-#define CAVC_VECTOR_H
-#include "mathutils.h"
+#ifndef CAVC_VECTOR_HPP
+#define CAVC_VECTOR_HPP
+#include "mathutils.hpp"
 #include <array>
 #include <cassert>
 namespace cavc {
@@ -253,16 +253,16 @@ Real dot(Vector<Real, N> const &v0, Vector<Real, N> const &v1) {
 }
 
 template <std::size_t N, typename Real> Real length(Vector<Real, N> const &v) {
-  assert(!fuzzyZero(v) && "length not defined for zero vector");
+  CAVC_ASSERT(!fuzzyZero(v), "length not defined for zero vector");
   return std::sqrt(dot(v, v));
 }
 
 template <std::size_t N, typename Real> Real normalize(Vector<Real, N> &v) {
-  assert(!fuzzyZero(v) && "normalize not defined for zero vector");
+  CAVC_ASSERT(!fuzzyZero(v), "normalize not defined for zero vector");
   Real length = std::sqrt(dot(v, v));
   v /= length;
   return length;
 }
 } // namespace cavc
 
-#endif // CAVC_VECTOR_H
+#endif // CAVC_VECTOR_HPP

@@ -1,6 +1,6 @@
-#ifndef CAVC_INTRLINESEG2LINESEG2_H
-#define CAVC_INTRLINESEG2LINESEG2_H
-#include "vector2.h"
+#ifndef CAVC_INTRLINESEG2LINESEG2_HPP
+#define CAVC_INTRLINESEG2LINESEG2_HPP
+#include "vector2.hpp"
 #include <algorithm>
 
 namespace cavc {
@@ -149,4 +149,4 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
   return result;
 }
 } // namespace cavc
-#endif // CAVC_INTRLINESEG2LINESEG2_H
+#endif // CAVC_INTRLINESEG2LINESEG2_HPP

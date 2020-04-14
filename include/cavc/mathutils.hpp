@@ -1,7 +1,7 @@
-#ifndef CAVC_MATHUTILS_H
-#define CAVC_MATHUTILS_H
+#ifndef CAVC_MATHUTILS_HPP
+#define CAVC_MATHUTILS_HPP
 
-#include <cassert>
+#include "internal/common.hpp"
 #include <cmath>
 #include <iterator>
 namespace cavc {
@@ -79,7 +79,7 @@ std::pair<Real, Real> quadraticSolutions(Real a, Real b, Real c, Real discr) {
   // that are very near each other in value.
   // See:
   // https://math.stackexchange.com/questions/311382/solving-a-quadratic-equation-with-precision-when-using-floating-point-variables
-  assert(fuzzyEqual(b * b - Real(4) * a * c, discr) && "discriminate is not correct");
+  CAVC_ASSERT(fuzzyEqual(b * b - Real(4) * a * c, discr), "discriminate is not correct");
   Real sqrtDiscr = std::sqrt(discr);
   Real denom = Real(2) * a;
   Real sol1;
@@ -109,23 +109,7 @@ template <typename T> std::size_t prevWrappingIndex(std::size_t index, const T &
 
   return index - 1;
 }
-
-template <typename T> inline void hashCombine(std::size_t &seed, const T &val) {
-  // copied from boost hash_combine, it's not the best hash combine but it's very simple
-  // https://stackoverflow.com/questions/35985960/c-why-is-boosthash-combine-the-best-way-to-combine-hash-values
-  seed ^= std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-
-struct IndexPairHash {
-  inline std::size_t operator()(std::pair<std::size_t, std::size_t> const &pair) const {
-    std::size_t seed = 0;
-    hashCombine(seed, pair.first);
-    hashCombine(seed, pair.second);
-    return seed;
-  }
-};
-
 } // namespace utils
 } // namespace cavc
 
-#endif // CAVC_MATHUTILS_H
+#endif // CAVC_MATHUTILS_HPP

@@ -1,6 +1,6 @@
-#ifndef CAVC_INTRCIRCLE2CIRCLE2_H
-#define CAVC_INTRCIRCLE2CIRCLE2_H
-#include "vector2.h"
+#ifndef CAVC_INTRCIRCLE2CIRCLE2_HPP
+#define CAVC_INTRCIRCLE2CIRCLE2_HPP
+#include "vector2.hpp"
 namespace cavc {
 enum class Circle2Circle2IntrType {
   // no intersect between circles
@@ -76,4 +76,4 @@ IntrCircle2Circle2Result<Real> intrCircle2Circle2(Real radius1, Vector2<Real> co
 }
 } // namespace cavc
 
-#endif // CAVC_INTRCIRCLE2CIRCLE2_H
+#endif // CAVC_INTRCIRCLE2CIRCLE2_HPP

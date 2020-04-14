@@ -1,7 +1,7 @@
-#ifndef CAVC_VECTOR2_H
-#define CAVC_VECTOR2_H
-#include "mathutils.h"
-#include "vector.h"
+#ifndef CAVC_VECTOR2_HPP
+#define CAVC_VECTOR2_HPP
+#include "mathutils.hpp"
+#include "vector.hpp"
 #include <cmath>
 namespace cavc {
 template <typename Real> using Vector2 = Vector<Real, 2>;
@@ -61,12 +61,12 @@ Vector2<Real> closestPointOnLineSeg(Vector2<Real> const &p0, Vector2<Real> const
   Vector2<Real> v = p1 - p0;
   Vector2<Real> w = point - p0;
   Real c1 = dot(w, v);
-  if (c1 <= Real(0)) {
+  if (c1 < utils::realThreshold<Real>()) {
     return p0;
   }
 
   Real c2 = dot(v, v);
-  if (c2 <= c1) {
+  if (c2 < c1 + utils::realThreshold<Real>()) {
     return p1;
   }
 
@@ -77,7 +77,14 @@ Vector2<Real> closestPointOnLineSeg(Vector2<Real> const &p0, Vector2<Real> const
 /// Returns true if point is left of the line pointing in the direction of the vector (p1 - p0).
 template <typename Real>
 bool isLeft(Vector2<Real> const &p0, Vector2<Real> const &p1, Vector2<Real> const &point) {
-  return (p1.x() - p0.x()) * (point.y() - p0.y()) - (p1.y() - p0.y()) * (point.x() - p0.x()) > 0.0;
+  return (p1.x() - p0.x()) * (point.y() - p0.y()) - (p1.y() - p0.y()) * (point.x() - p0.x()) >
+         Real(0);
+}
+
+template <typename Real>
+bool isLeftOrEqual(Vector2<Real> const &p0, Vector2<Real> const &p1, Vector2<Real> const &point) {
+  return (p1.x() - p0.x()) * (point.y() - p0.y()) - (p1.y() - p0.y()) * (point.x() - p0.x()) >=
+         Real(0);
 }
 
 /// Returns true if point is left or fuzzy coincident with the line pointing in the direction of the
@@ -102,8 +109,8 @@ bool isRightOrCoincident(Vector2<Real> const &p0, Vector2<Real> const &p1,
 template <typename Real>
 bool pointWithinArcSweepAngle(Vector2<Real> const &center, Vector2<Real> const &arcStart,
                               Vector2<Real> const &arcEnd, Real bulge, Vector2<Real> const &point) {
-  assert(std::abs(bulge) > utils::realThreshold<Real>() && "expected arc");
-  assert(std::abs(bulge) <= Real(1) && "bulge should always be between -1 and 1");
+  CAVC_ASSERT(std::abs(bulge) > utils::realThreshold<Real>(), "expected arc");
+  CAVC_ASSERT(std::abs(bulge) <= Real(1), "bulge should always be between -1 and 1");
 
   if (bulge > Real(0)) {
     return isLeftOrCoincident(center, arcStart, point) &&
@@ -114,4 +121,4 @@ bool pointWithinArcSweepAngle(Vector2<Real> const &center, Vector2<Real> const &
 }
 } // namespace cavc
 
-#endif // CAVC_VECTOR2_H
+#endif // CAVC_VECTOR2_HPP

@@ -1,7 +1,7 @@
-#ifndef CAVC_POLYLINECOMBINE_H
-#define CAVC_POLYLINECOMBINE_H
-#include "polyline.h"
-#include "polylineintersects.h"
+#ifndef CAVC_POLYLINECOMBINE_HPP
+#define CAVC_POLYLINECOMBINE_HPP
+#include "polyline.hpp"
+#include "polylineintersects.hpp"
 #include <unordered_map>
 #include <vector>
 
@@ -30,7 +30,7 @@ ProcessForCombineResult<Real>
 processForCombine(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
                   StaticSpatialIndex<Real, N> const &pline1SpatialIndex) {
 
-  assert(pline1.isClosed() && pline2.isClosed() && "combining only works with closed polylines");
+  CAVC_ASSERT(pline1.isClosed() && pline2.isClosed(), "combining only works with closed polylines");
 
   PlineIntersectsResult<Real> intrs;
   findIntersects(pline1, pline2, pline1SpatialIndex, intrs);
@@ -175,7 +175,7 @@ void sliceAtIntersects(Polyline<Real> const &pline,
     const std::size_t maxLoopCount = pline.size();
     while (true) {
       if (loopCount++ > maxLoopCount) {
-        assert(false && "Bug detected, should never loop this many times!");
+        CAVC_ASSERT(false, "Bug detected, should never loop this many times!");
         // break to avoid infinite loop
         break;
       }
@@ -275,7 +275,7 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
     const std::size_t maxLoopCount = slices.size();
     while (true) {
       if (loopCount++ > maxLoopCount) {
-        assert(false && "Bug detected, should never loop this many times!");
+        CAVC_ASSERT(false, "Bug detected, should never loop this many times!");
         // break to avoid infinite loop
         break;
       }
@@ -338,7 +338,7 @@ template <typename Real> struct CombineResult {
 template <typename Real>
 CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real> const &plineB,
                                      PlineCombineMode combineMode) {
-  assert(plineA.isClosed() && plineB.isClosed() && "only supports closed polylines");
+  CAVC_ASSERT(plineA.isClosed() && plineB.isClosed(), "combining only supports closed polylines");
   using namespace internal;
 
   auto plASpatialIndex = createApproxSpatialIndex(plineA);
@@ -560,4 +560,4 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
   return result;
 }
 }
-#endif // CAVC_POLYLINECOMBINE_H
+#endif // CAVC_POLYLINECOMBINE_HPP

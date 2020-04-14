@@ -1,7 +1,7 @@
-#ifndef CAVC_POLYLINEOFFSET_H
-#define CAVC_POLYLINEOFFSET_H
-#include "polyline.h"
-#include "polylineintersects.h"
+#ifndef CAVC_POLYLINEOFFSET_HPP
+#define CAVC_POLYLINEOFFSET_HPP
+#include "polyline.hpp"
+#include "polylineintersects.hpp"
 #include <unordered_map>
 #include <vector>
 
@@ -110,7 +110,7 @@ void lineToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real>
   const auto &v2 = s1.v2;
   const auto &u1 = s2.v1;
   const auto &u2 = s2.v2;
-  assert(v1.bulgeIsZero() && u1.bulgeIsZero() && "both pairs should be lines");
+  CAVC_ASSERT(v1.bulgeIsZero() && u1.bulgeIsZero(), "both segs should be lines");
 
   auto connectUsingArc = [&] {
     auto const &arcCenter = s1.origV2Pos;
@@ -160,8 +160,8 @@ void lineToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
   const auto &v2 = s1.v2;
   const auto &u1 = s2.v1;
   const auto &u2 = s2.v2;
-  assert(v1.bulgeIsZero() && !u1.bulgeIsZero() &&
-         "first pair should be arc, second pair should be line");
+  CAVC_ASSERT(v1.bulgeIsZero() && !u1.bulgeIsZero(),
+              "first seg should be arc, second seg should be line");
 
   auto connectUsingArc = [&] {
     auto const &arcCenter = s1.origV2Pos;
@@ -208,7 +208,7 @@ void lineToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
   } else if (intrResult.numIntersects == 1) {
     processIntersect(intrResult.t0, pointFromParametric(v1.pos(), v2.pos(), intrResult.t0));
   } else {
-    assert(intrResult.numIntersects == 2);
+    CAVC_ASSERT(intrResult.numIntersects == 2, "should have 2 intersects here");
     // always use intersect closest to original point
     Vector2<Real> i1 = pointFromParametric(v1.pos(), v2.pos(), intrResult.t0);
     Real dist1 = distSquared(i1, s1.origV2Pos);
@@ -231,8 +231,8 @@ void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
   const auto &v2 = s1.v2;
   const auto &u1 = s2.v1;
   const auto &u2 = s2.v2;
-  assert(!v1.bulgeIsZero() && u1.bulgeIsZero() &&
-         "first pair should be line, second pair should be arc");
+  CAVC_ASSERT(!v1.bulgeIsZero() && u1.bulgeIsZero(),
+              "first seg should be line, second seg should be arc");
 
   auto connectUsingArc = [&] {
     auto const &arcCenter = s1.origV2Pos;
@@ -279,7 +279,7 @@ void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
   } else if (intrResult.numIntersects == 1) {
     processIntersect(intrResult.t0, pointFromParametric(u1.pos(), u2.pos(), intrResult.t0));
   } else {
-    assert(intrResult.numIntersects == 2);
+    CAVC_ASSERT(intrResult.numIntersects == 2, "should have 2 intersects here");
     const auto &origPoint = s2.collapsedArc ? u1.pos() : s1.origV2Pos;
     Vector2<Real> i1 = pointFromParametric(u1.pos(), u2.pos(), intrResult.t0);
     Real dist1 = distSquared(i1, origPoint);
@@ -302,7 +302,7 @@ void arcToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> c
   const auto &v2 = s1.v2;
   const auto &u1 = s2.v1;
   const auto &u2 = s2.v2;
-  assert(!v1.bulgeIsZero() && !u1.bulgeIsZero() && "both pairs should be arcs");
+  CAVC_ASSERT(!v1.bulgeIsZero() && !u1.bulgeIsZero(), "both segs should be arcs");
 
   const auto arc1 = arcRadiusAndCenter(v1, v2);
   const auto arc2 = arcRadiusAndCenter(u1, u2);
@@ -418,7 +418,7 @@ void offsetCircleIntersectsWithPline(Polyline<Real> const &pline, Real offset,
           output.emplace_back(sIndex, pointFromParametric(v1.pos(), v2.pos(), intrResult.t0));
         }
       } else {
-        assert(intrResult.numIntersects == 2);
+        CAVC_ASSERT(intrResult.numIntersects == 2, "should be two intersects here");
         if (validLineSegIntersect(intrResult.t0)) {
           output.emplace_back(sIndex, pointFromParametric(v1.pos(), v2.pos(), intrResult.t0));
         }
@@ -587,7 +587,7 @@ template <typename Real>
 std::vector<OpenPolylineSlice<Real>> slicesFromRawOffset(Polyline<Real> const &originalPline,
                                                          Polyline<Real> const &rawOffsetPline,
                                                          Real offset) {
-  assert(originalPline.isClosed() && "use dual slice at intersects for open polylines");
+  CAVC_ASSERT(originalPline.isClosed(), "use dual slice at intersects for open polylines");
 
   std::vector<OpenPolylineSlice<Real>> result;
   if (rawOffsetPline.size() < 2) {
@@ -720,7 +720,7 @@ std::vector<OpenPolylineSlice<Real>> slicesFromRawOffset(Polyline<Real> const &o
     const std::size_t maxLoopCount = rawOffsetPline.size();
     while (true) {
       if (loopCount++ > maxLoopCount) {
-        assert(false && "Bug detected, should never loop this many times!");
+        CAVC_ASSERT(false, "Bug detected, should never loop this many times!");
         // break to avoid infinite loop
         break;
       }
@@ -894,7 +894,7 @@ dualSliceAtIntersectsForOffset(Polyline<Real> const &originalPline,
     const std::size_t maxLoopCount = rawOffsetPline.size();
     while (true) {
       if (loopCount++ > maxLoopCount) {
-        assert(false && "Bug detected, should never loop this many times!");
+        CAVC_ASSERT(false, "Bug detected, should never loop this many times!");
         // break to avoid infinite loop
         break;
       }
@@ -1018,7 +1018,7 @@ dualSliceAtIntersectsForOffset(Polyline<Real> const &originalPline,
     const std::size_t maxLoopCount = rawOffsetPline.size();
     while (true) {
       if (loopCount++ > maxLoopCount) {
-        assert(false && "Bug detected, should never loop this many times!");
+        CAVC_ASSERT(false, "Bug detected, should never loop this many times!");
         // break to avoid infinite loop
         break;
       }
@@ -1143,7 +1143,7 @@ stitchOffsetSlicesTogether(std::vector<OpenPolylineSlice<Real>> const &slices, b
     const std::size_t maxLoopCount = slices.size();
     while (true) {
       if (loopCount++ > maxLoopCount) {
-        assert(false && "Bug detected, should never loop this many times!");
+        CAVC_ASSERT(false, "Bug detected, should never loop this many times!");
         // break to avoid infinite loop
         break;
       }
@@ -1235,4 +1235,4 @@ std::vector<Polyline<Real>> parallelOffset(Polyline<Real> const &pline, Real off
 }
 
 } // namespace cavc
-#endif // CAVC_POLYLINEOFFSET_H
+#endif // CAVC_POLYLINEOFFSET_HPP

@@ -1,10 +1,10 @@
-#ifndef CAVC_PLINESEGMENT_H
-#define CAVC_PLINESEGMENT_H
-#include "intrcircle2circle2.h"
-#include "intrlineseg2circle2.h"
-#include "intrlineseg2lineseg2.h"
-#include "mathutils.h"
-#include "vector2.h"
+#ifndef CAVC_PLINESEGMENT_HPP
+#define CAVC_PLINESEGMENT_HPP
+#include "intrcircle2circle2.hpp"
+#include "intrlineseg2circle2.hpp"
+#include "intrlineseg2lineseg2.hpp"
+#include "mathutils.hpp"
+#include "vector2.hpp"
 
 // This header has the polyline vertex definition and functions that work with polyline segments
 // defined by two polyline vertexes (e.g. intersects, arc information, splitting, etc.)
@@ -66,8 +66,8 @@ template <typename Real> struct ArcRadiusAndCenter {
 template <typename Real>
 ArcRadiusAndCenter<Real> arcRadiusAndCenter(PlineVertex<Real> const &v1,
                                             PlineVertex<Real> const &v2) {
-  assert(!v1.bulgeIsZero() && "v1 to v2 must be an arc");
-  assert(!fuzzyEqual(v1.pos(), v2.pos()) && "v1 must not equal v2");
+  CAVC_ASSERT(!v1.bulgeIsZero(), "v1 to v2 must be an arc");
+  CAVC_ASSERT(!fuzzyEqual(v1.pos(), v2.pos()), "v1 must not be ontop of v2");
 
   // compute radius
   Real b = std::abs(v1.bulge());
@@ -324,7 +324,7 @@ IntrPlineSegsResult<Real> intrPlineSegs(PlineVertex<Real> const &v1, PlineVertex
         result.intrType = PlineSegIntrType::NoIntersect;
       }
     } else {
-      assert(intrResult.numIntersects == 2);
+      CAVC_ASSERT(intrResult.numIntersects == 2, "shouldn't get here without 2 intersects");
       auto p1 = pointInSweep(intrResult.t0);
       auto p2 = pointInSweep(intrResult.t1);
 
@@ -480,4 +480,4 @@ IntrPlineSegsResult<Real> intrPlineSegs(PlineVertex<Real> const &v1, PlineVertex
 }
 
 } // namespace cavc
-#endif // CAVC_PLINESEGMENT_H
+#endif // CAVC_PLINESEGMENT_HPP

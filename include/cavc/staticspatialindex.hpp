@@ -1,5 +1,5 @@
-#ifndef CAVC_STATICSPATIALINDEX_H
-#define CAVC_STATICSPATIALINDEX_H
+#ifndef CAVC_STATICSPATIALINDEX_HPP
+#define CAVC_STATICSPATIALINDEX_HPP
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -7,12 +7,13 @@
 #include <memory>
 #include <stack>
 #include <vector>
+#include "internal/common.hpp"
 
 namespace cavc {
 template <typename Real, std::size_t NodeSize = 16> class StaticSpatialIndex {
 public:
   StaticSpatialIndex(std::size_t numItems) {
-    assert(numItems > 0 && "number of items must be greater than 0");
+    CAVC_ASSERT(numItems > 0, "number of items must be greater than 0");
     static_assert(NodeSize >= 2 && NodeSize <= 65535, "node size must be between 2 and 65535");
     // calculate the total number of nodes in the R-tree to allocate space for
     // and the index of each tree level (used in search later)
@@ -73,7 +74,7 @@ public:
   }
 
   void finish() {
-    assert(m_pos >> 2 == m_numItems && "added item count should equal static size given");
+    CAVC_ASSERT(m_pos >> 2 == m_numItems, "added item count should equal static size given");
 
     // if number of items is less than node size then skip sorting since each node of boxes must be
     // fully scanned regardless and there is only one node
@@ -239,7 +240,7 @@ public:
   template <typename F>
   void visitQuery(Real minX, Real minY, Real maxX, Real maxY, F &&visitor,
                   std::vector<std::size_t> &stack) const {
-    assert(m_pos == 4 * m_numNodes && "data not yet indexed - call Finish() before querying");
+    CAVC_ASSERT(m_pos == 4 * m_numNodes, "data not yet indexed - call Finish() before querying");
 
     auto nodeIndex = 4 * m_numNodes - 4;
     auto level = m_levelBounds.size() - 1;
@@ -364,7 +365,7 @@ private:
   // quicksort that partially sorts the bounding box data alongside the Hilbert values
   static void sort(std::uint32_t *values, Real *boxes, std::size_t *indices, std::size_t left,
                    std::size_t right) {
-    assert(left <= right);
+    CAVC_ASSERT(left <= right, "left index should never be past right index");
 
     // check against NodeSize (only need to sort down to NodeSize buckets)
     if (left / NodeSize >= right / NodeSize) {
@@ -426,4 +427,4 @@ private:
 };
 } // namespace cavc
 
-#endif // CAVC_STATICSPATIALINDEX_H
+#endif // CAVC_STATICSPATIALINDEX_HPP
