@@ -105,10 +105,11 @@ SplitResult<Real> splitAtPoint(PlineVertex<Real> const &v1, PlineVertex<Real> co
   if (v1.bulgeIsZero()) {
     result.updatedStart = v1;
     result.splitVertex = PlineVertex<Real>(point, Real(0));
-  } else if (fuzzyEqual(v1.pos(), v2.pos()) || fuzzyEqual(v1.pos(), point)) {
+  } else if (fuzzyEqual(v1.pos(), v2.pos(), utils::realPrecision<Real>()) ||
+             fuzzyEqual(v1.pos(), point, utils::realPrecision<Real>())) {
     result.updatedStart = PlineVertex<Real>(point, Real(0));
     result.splitVertex = PlineVertex<Real>(point, v1.bulge());
-  } else if (fuzzyEqual(v2.pos(), point)) {
+  } else if (fuzzyEqual(v2.pos(), point, utils::realPrecision<Real>())) {
     result.updatedStart = v1;
     result.splitVertex = PlineVertex<Real>(v2.pos(), Real(0));
   } else {

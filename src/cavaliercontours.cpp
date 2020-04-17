@@ -34,7 +34,8 @@ static void move_to_list(std::vector<cavc::Polyline<cavc_real>> &plines, cavc_pl
 }
 
 // helper to copy vertex data to cavc_pline
-static void copy_to_pline(cavc_pline *api_pline, cavc_vertex *vertex_data, uint32_t vertex_count) {
+static void copy_to_pline(cavc_pline *api_pline, cavc_vertex const *vertex_data,
+                          uint32_t vertex_count) {
   api_pline->data.vertexes().clear();
   api_pline->data.vertexes().reserve(vertex_count);
 
@@ -44,7 +45,7 @@ static void copy_to_pline(cavc_pline *api_pline, cavc_vertex *vertex_data, uint3
 }
 
 // helper to copy to vertex_data from cavc_pline
-static void copy_to_vertex_data(cavc_pline *api_pline, cavc_vertex *vertex_data) {
+static void copy_to_vertex_data(cavc_pline const *api_pline, cavc_vertex *vertex_data) {
   auto const &pline = api_pline->data;
   uint32_t vertex_count = static_cast<uint32_t>(pline.size());
   for (uint32_t i = 0; i < vertex_count; ++i) {
@@ -53,7 +54,7 @@ static void copy_to_vertex_data(cavc_pline *api_pline, cavc_vertex *vertex_data)
   }
 }
 
-cavc_pline *cavc_pline_new(cavc_vertex *vertex_data, uint32_t vertex_count, int is_closed) {
+cavc_pline *cavc_pline_new(const cavc_vertex *vertex_data, uint32_t vertex_count, int is_closed) {
   CAVC_BEGIN_TRY_CATCH
   cavc_pline *result = new cavc_pline();
   if (vertex_data) {
@@ -72,7 +73,7 @@ void cavc_pline_delete(cavc_pline *polyline) {
   CAVC_END_TRY_CATCH
 }
 
-uint32_t cavc_pline_capacity(cavc_pline *pline) {
+uint32_t cavc_pline_capacity(cavc_pline const *pline) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
   return static_cast<uint32_t>(pline->data.vertexes().capacity());
@@ -86,28 +87,28 @@ void cavc_pline_set_capacity(cavc_pline *pline, uint32_t size) {
   CAVC_END_TRY_CATCH
 }
 
-uint32_t cavc_pline_vertex_count(cavc_pline *pline) {
+uint32_t cavc_pline_vertex_count(cavc_pline const *pline) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
   return static_cast<uint32_t>(pline->data.size());
   CAVC_END_TRY_CATCH
 }
 
-void cavc_pline_vertex_data(cavc_pline *pline, cavc_vertex *vertex_data) {
+void cavc_pline_vertex_data(cavc_pline const *pline, cavc_vertex *vertex_data) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
   copy_to_vertex_data(pline, vertex_data);
   CAVC_END_TRY_CATCH
 }
 
-int cavc_pline_is_closed(cavc_pline *pline) {
+int cavc_pline_is_closed(cavc_pline const *pline) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
   return pline->data.isClosed();
   CAVC_END_TRY_CATCH
 }
 
-void cavc_pline_set_vertex_data(cavc_pline *pline, cavc_vertex *vertex_data,
+void cavc_pline_set_vertex_data(cavc_pline *pline, const cavc_vertex *vertex_data,
                                 uint32_t vertex_count) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
@@ -154,14 +155,14 @@ void cavc_pline_list_delete(cavc_pline_list *pline_list) {
   CAVC_END_TRY_CATCH
 }
 
-uint32_t cavc_pline_list_count(cavc_pline_list *pline_list) {
+uint32_t cavc_pline_list_count(cavc_pline_list const *pline_list) {
   CAVC_ASSERT(pline_list, "null pline_list not allowed");
   CAVC_BEGIN_TRY_CATCH
   return static_cast<uint32_t>(pline_list->data.size());
   CAVC_END_TRY_CATCH
 }
 
-cavc_pline *cavc_pline_list_get(cavc_pline_list *pline_list, uint32_t index) {
+cavc_pline *cavc_pline_list_get(cavc_pline_list const *pline_list, uint32_t index) {
   CAVC_ASSERT(pline_list, "null pline_list not allowed");
   CAVC_ASSERT(index < pline_list->data.size(), "index is out of vertexes range");
   CAVC_BEGIN_TRY_CATCH
@@ -179,7 +180,7 @@ cavc_pline *cavc_pline_list_release(cavc_pline_list *pline_list, uint32_t index)
   CAVC_END_TRY_CATCH
 }
 
-int cavc_parallel_offet(cavc_pline *pline, cavc_real delta, cavc_pline_list **output,
+int cavc_parallel_offet(cavc_pline const *pline, cavc_real delta, cavc_pline_list **output,
                         int option_flags) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_ASSERT(output, "null output not allowed");
@@ -198,7 +199,7 @@ int cavc_parallel_offet(cavc_pline *pline, cavc_real delta, cavc_pline_list **ou
   CAVC_END_TRY_CATCH
 }
 
-void cavc_combine_plines(cavc_pline *pline_a, cavc_pline *pline_b, int combine_mode,
+void cavc_combine_plines(cavc_pline const *pline_a, cavc_pline const *pline_b, int combine_mode,
                          cavc_pline_list **remaining, cavc_pline_list **subtracted) {
   CAVC_ASSERT(pline_a, "null pline_a not allowed");
   CAVC_ASSERT(pline_b, "null pline_b not allowed");
@@ -227,28 +228,28 @@ void cavc_combine_plines(cavc_pline *pline_a, cavc_pline *pline_b, int combine_m
   CAVC_END_TRY_CATCH
 }
 
-cavc_real cavc_get_path_length(cavc_pline *pline) {
+cavc_real cavc_get_path_length(cavc_pline const *pline) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
   return cavc::getPathLength(pline->data);
   CAVC_END_TRY_CATCH
 }
 
-cavc_real cavc_get_area(cavc_pline *pline) {
+cavc_real cavc_get_area(cavc_pline const *pline) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
   return cavc::getArea(pline->data);
   CAVC_END_TRY_CATCH
 }
 
-int cavc_get_winding_number(cavc_pline *pline, cavc_point point) {
+int cavc_get_winding_number(cavc_pline const *pline, cavc_point point) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
   return cavc::getWindingNumber(pline->data, cavc::Vector2<cavc_real>(point.x, point.y));
   CAVC_END_TRY_CATCH
 }
 
-void cavc_get_extents(cavc_pline *pline, cavc_real *min_x, cavc_real *min_y, cavc_real *max_x,
+void cavc_get_extents(cavc_pline const *pline, cavc_real *min_x, cavc_real *min_y, cavc_real *max_x,
                       cavc_real *max_y) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_BEGIN_TRY_CATCH
@@ -260,7 +261,7 @@ void cavc_get_extents(cavc_pline *pline, cavc_real *min_x, cavc_real *min_y, cav
   CAVC_END_TRY_CATCH
 }
 
-void cavc_get_closest_point(cavc_pline *pline, cavc_point input_point,
+void cavc_get_closest_point(cavc_pline const *pline, cavc_point input_point,
                             uint32_t *closest_start_index, cavc_point *closest_point,
                             cavc_real *distance) {
   CAVC_ASSERT(pline, "null pline not allowed");

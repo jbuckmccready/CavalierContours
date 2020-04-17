@@ -486,13 +486,19 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
     return result;
   }
 
-  result.vertexes().reserve(pline.size());
-  result.isClosed() = pline.isClosed();
-
   std::vector<PlineOffsetSegment<Real>> rawOffsets = createUntrimmedOffsetSegments(pline, offset);
   if (rawOffsets.size() == 0) {
     return result;
   }
+
+  // detect single collapsed arc segment (this may be removed in the future if invalid segments are
+  // tracked in join functions to be pruned at slice creation)
+  if (rawOffsets.size() == 1 && rawOffsets[0].collapsedArc) {
+    return result;
+  }
+
+  result.vertexes().reserve(pline.size());
+  result.isClosed() = pline.isClosed();
 
   const bool connectionArcsAreCCW = offset < Real(0);
 
@@ -514,7 +520,17 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
 
   result.addVertex(rawOffsets[0].v1);
 
-  for (std::size_t i = 1; i < rawOffsets.size(); ++i) {
+  // join first two segments and determine if first vertex was replaced (to know how to handle last
+  // two segment joins for closed polyline)
+  if (rawOffsets.size() > 1) {
+
+    auto const &seg01 = rawOffsets[0];
+    auto const &seg12 = rawOffsets[1];
+    joinResultVisitor(seg01, seg12, result);
+  }
+  const bool firstVertexReplaced = result.size() == 1;
+
+  for (std::size_t i = 2; i < rawOffsets.size(); ++i) {
     const auto &seg1 = rawOffsets[i - 1];
     const auto &seg2 = rawOffsets[i];
     joinResultVisitor(seg1, seg2, result);
@@ -537,25 +553,27 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
     }
     result.vertexes().pop_back();
 
-    // update first vertex
-    const Vector2<Real> &updatedFirstPos = closingPartResult.lastVertex().pos();
-    if (result[0].bulgeIsZero()) {
-      // just update position
-      result[0].pos() = updatedFirstPos;
-    } else if (result.size() > 1) {
-      // update position and bulge
-      const auto arc = arcRadiusAndCenter(result[0], result[1]);
-      const Real a1 = angle(arc.center, updatedFirstPos);
-      const Real a2 = angle(arc.center, result[1].pos());
-      const Real updatedTheta = utils::deltaAngle(a1, a2);
-      if ((updatedTheta < Real(0) && result[0].bulgeIsPos()) ||
-          (updatedTheta > Real(0) && result[0].bulgeIsNeg())) {
-        // first vertex not valid, just update its position to be removed later
+    // update first vertex (only if it has not already been updated/replaced)
+    if (!firstVertexReplaced) {
+      const Vector2<Real> &updatedFirstPos = closingPartResult.lastVertex().pos();
+      if (result[0].bulgeIsZero()) {
+        // just update position
         result[0].pos() = updatedFirstPos;
-      } else {
+      } else if (result.size() > 1) {
         // update position and bulge
-        result[0].pos() = updatedFirstPos;
-        result[0].bulge() = std::tan(updatedTheta / Real(4));
+        const auto arc = arcRadiusAndCenter(result[0], result[1]);
+        const Real a1 = angle(arc.center, updatedFirstPos);
+        const Real a2 = angle(arc.center, result[1].pos());
+        const Real updatedTheta = utils::deltaAngle(a1, a2);
+        if ((updatedTheta < Real(0) && result[0].bulgeIsPos()) ||
+            (updatedTheta > Real(0) && result[0].bulgeIsNeg())) {
+          // first vertex not valid, just update its position to be removed later
+          result[0].pos() = updatedFirstPos;
+        } else {
+          // update position and bulge
+          result[0].pos() = updatedFirstPos;
+          result[0].bulge() = std::tan(updatedTheta / Real(4));
+        }
       }
     }
 

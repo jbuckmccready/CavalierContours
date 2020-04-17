@@ -17,7 +17,7 @@ template <typename Real> constexpr Real realPrecision() { return Real(1e-5); }
 template <typename Real> constexpr Real sliceJoinThreshold() { return Real(1e-4); }
 
 // absolute threshold to be used for pruning invalid slices for offset
-template <typename Real> constexpr Real offsetThreshold() { return Real(1e-3); }
+template <typename Real> constexpr Real offsetThreshold() { return Real(1e-4); }
 
 template <typename Real> constexpr Real pi() { return Real(3.14159265358979323846264338327950288); }
 

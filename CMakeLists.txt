@@ -8,9 +8,11 @@ endif()
 
 
 project(CavalierContours VERSION 0.1)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(CAVC_HEADER_ONLY "do not build any libraries just make cpp header only library available" OFF)
-option(CAVC_BUILD_SHARED_LIB "build the c api as a shared library, if OFF and CAVC_HEADER_ONLY OFF then static library will be built" ON)
+option(CAVC_HEADER_ONLY "C++ header only library of CavalierContours, if ON then no library is built" OFF)
+option(CAVC_BUILD_SHARED_LIB "Build the C API CavalierContours dynamic shared library (SET OFF for static library)" ON)
 
 if(CAVC_HEADER_ONLY)
   set(CAVC_CPP_HEADER_ONLY_LIB ${PROJECT_NAME})
@@ -26,7 +28,7 @@ target_include_directories(${CAVC_CPP_HEADER_ONLY_LIB}
   INTERFACE include/)
 
 if(NOT CAVC_HEADER_ONLY)
-  if (CAVC_BUILD_SHARED_LIB)
+  if(CAVC_BUILD_SHARED_LIB)
     add_library(${CAVC_C_API_LIB}
       SHARED src/cavaliercontours.cpp)
   else()
@@ -43,11 +45,10 @@ if(NOT CAVC_HEADER_ONLY)
     PRIVATE ${CAVC_CPP_HEADER_ONLY_LIB})
 endif()
 
-if (NOT_SUBPROJECT)
+if (NOT_SUBPROJECT AND NOT CAVC_HEADER_ONLY)
   # output all libraries and executables to the root build dir for simplicity in running tests with dynamic libs
   set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
   set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-  include(CTest)
   add_subdirectory(examples)
   add_subdirectory(tests)
 endif()
