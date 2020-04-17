@@ -12,7 +12,7 @@ macro(add_benchmark name)
   target_link_libraries(${name}
     PRIVATE benchmark::benchmark)
 	if (MSVC)
-        target_link_options(${name} PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/PROFILE>)
+      target_link_options(${name} PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/PROFILE>)
     endif()
 endmacro()
 

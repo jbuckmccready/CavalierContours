@@ -37,6 +37,13 @@ if(NOT CAVC_HEADER_ONLY)
     target_compile_definitions(${CAVC_C_API_LIB}
       PUBLIC CAVC_STATIC_LIB)
   endif()
+  # compiler warnings, note: not using /W4 on MSVC since it emits warning due to default of /W3
+  # from cmake
+  target_compile_options(${CAVC_C_API_LIB} PRIVATE
+     $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+          -Werror -Wall -Wextra -pedantic-errors -Wsign-conversion -Wconversion>
+     $<$<CXX_COMPILER_ID:MSVC>:
+          /WX>)
   target_compile_definitions(${CAVC_C_API_LIB}
     PRIVATE CAVC_EXPORTS)
   target_include_directories(${CAVC_C_API_LIB}
@@ -47,8 +54,10 @@ endif()
 
 if (NOT_SUBPROJECT AND NOT CAVC_HEADER_ONLY)
   # output all libraries and executables to the root build dir for simplicity in running tests with dynamic libs
-  set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-  set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
   add_subdirectory(examples)
+  include(CTest)
+  enable_testing()
   add_subdirectory(tests)
 endif()

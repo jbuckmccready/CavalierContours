@@ -315,7 +315,7 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
   }
 
   return result;
-};
+}
 } // namespace internal
 
 /// Combine mode to apply to closed polylines, corresponds to the various boolean operations that

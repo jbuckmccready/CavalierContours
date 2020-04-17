@@ -18,3 +18,8 @@ target_link_libraries(c_api_tests
 
 target_link_libraries(c_api_tests
   PRIVATE gtest_main gtest gmock)
+
+# note: adding executable as single test rather than discovering tests via gtest_discover_tests
+# because it adds parmeterized tests as individual tests and ctest runs them one by one which is
+# quite slow
+add_test(NAME c_api_tests COMMAND c_api_tests)

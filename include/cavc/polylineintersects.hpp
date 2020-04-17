@@ -122,7 +122,6 @@ sortAndjoinCoincidentSlices(std::vector<PlineCoincidentIntersect<Real>> &coincid
 
   auto endCoincidentSliceAt = [&](std::size_t intrIndex) {
     const auto &intr = coincidentIntrs[intrIndex];
-    const auto &v1 = pline1[intr.sIndex1];
     const auto &u1 = pline2[intr.sIndex2];
 
     coincidentSlices.emplace_back();
