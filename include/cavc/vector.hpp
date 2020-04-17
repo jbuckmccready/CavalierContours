@@ -13,7 +13,7 @@ public:
       std::copy(values.begin(), values.end(), m_data.begin());
     } else if (N > values.size()) {
       std::copy(values.begin(), values.end(), m_data.begin());
-      std::fill(m_data.begin() + values.size(), m_data.end(), Real(0));
+      std::fill(m_data.begin() + static_cast<std::ptrdiff_t>(values.size()), m_data.end(), Real(0));
     } else {
       std::copy(values.begin(), values.begin() + N, m_data.begin());
     }

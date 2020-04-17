@@ -40,9 +40,9 @@ if(NOT CAVC_HEADER_ONLY)
   # compiler warnings, note: not using /W4 on MSVC since it emits warning due to default of /W3
   # from cmake
   if(MSVC)
-    if(CXX_COMPILER_ID EQUAL Clang)
+    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
       target_compile_options(${CAVC_C_API_LIB} PRIVATE
-        /clang: -Werror -Wall -Wextra -pedantic-errors -Wsign-conversion -Wconversion)
+        /clang:-Werror /clang:-Wall /clang:-Wextra /clang:-pedantic-errors /clang:-Wsign-conversion /clang:-Wconversion)
     endif()
     target_compile_options(${CAVC_C_API_LIB} PRIVATE
       /WX)

@@ -131,7 +131,7 @@ void cavc_pline_remove_range(cavc_pline *pline, uint32_t start_index, uint32_t c
   auto &vertexes = pline->data.vertexes();
   auto start_it = vertexes.begin();
   std::advance(start_it, start_index);
-  vertexes.erase(start_it, start_it + count);
+  vertexes.erase(start_it, start_it + static_cast<std::ptrdiff_t>(count));
   CAVC_END_TRY_CATCH
 }
 
@@ -175,7 +175,7 @@ cavc_pline *cavc_pline_list_release(cavc_pline_list *pline_list, uint32_t index)
   CAVC_ASSERT(index < pline_list->data.size(), "index is out of vertexes range");
   CAVC_BEGIN_TRY_CATCH
   cavc_pline *target = pline_list->data[index].release();
-  pline_list->data.erase(pline_list->data.begin() + index);
+  pline_list->data.erase(pline_list->data.begin() + static_cast<std::ptrdiff_t>(index));
   return target;
   CAVC_END_TRY_CATCH
 }
