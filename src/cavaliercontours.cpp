@@ -25,7 +25,7 @@ struct cavc_pline_list {
 };
 
 // helper to move vector of plines to cavc_pline_list
-static void move_to_list(std::vector<cavc::Polyline<cavc_real>> &plines, cavc_pline_list *list) {
+static void move_to_list(std::vector<cavc::Polyline<cavc_real>> &&plines, cavc_pline_list *list) {
   list->data.reserve(plines.size());
 
   for (std::size_t i = 0; i < plines.size(); ++i) {
@@ -180,22 +180,15 @@ cavc_pline *cavc_pline_list_release(cavc_pline_list *pline_list, uint32_t index)
   CAVC_END_TRY_CATCH
 }
 
-int cavc_parallel_offet(cavc_pline const *pline, cavc_real delta, cavc_pline_list **output,
-                        int option_flags) {
+void cavc_parallel_offet(cavc_pline const *pline, cavc_real delta, cavc_pline_list **output,
+                         int option_flags) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_ASSERT(output, "null output not allowed");
   CAVC_BEGIN_TRY_CATCH
   bool mayHaveSelfIntersects = (option_flags & 0x1) != 0;
   auto results = cavc::parallelOffset(pline->data, delta, mayHaveSelfIntersects);
-  auto *result = new cavc_pline_list();
-  *output = result;
-
-  result->data.reserve(results.size());
-  for (uint32_t i = 0; i < results.size(); ++i) {
-    result->data.push_back(std::make_unique<cavc_pline>(std::move(results[i])));
-  }
-
-  return 0;
+  *output = new cavc_pline_list();
+  move_to_list(std::move(results), *output);
   CAVC_END_TRY_CATCH
 }
 
@@ -223,8 +216,10 @@ void cavc_combine_plines(cavc_pline const *pline_a, cavc_pline const *pline_b, i
   }
   auto results = cavc::combinePolylines(pline_a->data, pline_b->data, mode);
 
-  move_to_list(results.remaining, *remaining);
-  move_to_list(results.subtracted, *subtracted);
+  *remaining = new cavc_pline_list();
+  *subtracted = new cavc_pline_list();
+  move_to_list(std::move(results.remaining), *remaining);
+  move_to_list(std::move(results.subtracted), *subtracted);
   CAVC_END_TRY_CATCH
 }
 

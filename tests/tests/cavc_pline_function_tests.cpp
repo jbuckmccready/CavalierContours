@@ -65,7 +65,7 @@ struct cavc_plineFunctionsTestCase {
   std::vector<cavc_real> closestPointDistanceResults;
   bool skipClosestPointTest() const { return closestPointTestPts.empty(); }
 
-  // add a closestpoint test input point
+  // add a closestPoint test input point
   void addClosestPointTestPt(cavc_point testPt, cavc_point closestPointResult,
                              cavc_real distanceResult,
                              uint32_t indexResult = std::numeric_limits<uint32_t>::max()) {
@@ -74,6 +74,24 @@ struct cavc_plineFunctionsTestCase {
     closestPointDistanceResults.push_back(distanceResult);
     closestPointIndexResults.push_back(indexResult);
   }
+
+  std::vector<cavc_real> offsetTestDeltas;
+  std::vector<std::vector<cavc_vertex>> resultOffsetPlines;
+  std::vector<bool> resultIsClosed;
+  bool skipOffsetTest() const { return offsetTestDeltas.empty(); }
+
+  // add an offset test input
+  void addOffsetTest(cavc_real offsetDelta, std::vector<cavc_vertex> vertexes, bool isClosed) {
+    offsetTestDeltas.push_back(offsetDelta);
+    resultOffsetPlines.emplace_back(std::move(vertexes));
+    resultIsClosed.push_back(isClosed);
+  }
+
+  std::vector<cavc_real> collapsedOffsetDeltas;
+  void addCollapsedOffsetTest(cavc_real offsetDelta) {
+    collapsedOffsetDeltas.push_back(offsetDelta);
+  }
+  bool skipCollapsedOffsetTest() const { return collapsedOffsetDeltas.empty(); }
 
   bool isClosed() const { return cavc_pline_is_closed(pline); }
 };
@@ -171,6 +189,31 @@ void addCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real c
                                       outsideDist - circleRadius);
     }
 
+    cavc_real offsetOutwardDelta = -direction * 0.25 * circleRadius;
+    std::vector<cavc_vertex> offsetOutwardVertexes;
+
+    cavc_real offsetInwardDelta = direction * 0.5 * circleRadius;
+    std::vector<cavc_vertex> offsetInwardVertexes;
+
+    for (auto const &v : test_case.plineVertexes) {
+      cavc_point dirVec = {v.x - circleCenter.x, v.y - circleCenter.y};
+      cavc_real dirVecLength = std::sqrt(dirVec.x * dirVec.x + dirVec.y * dirVec.y);
+      cavc_point unitDirVec = {dirVec.x / dirVecLength, dirVec.y / dirVecLength};
+      cavc_real outwardMagnitude = circleRadius + std::abs(offsetOutwardDelta);
+      cavc_real inwardMagnitude = circleRadius - std::abs(offsetInwardDelta);
+      offsetOutwardVertexes.push_back({outwardMagnitude * unitDirVec.x + circleCenter.x,
+                                       outwardMagnitude * unitDirVec.y + circleCenter.y, v.bulge});
+      offsetInwardVertexes.push_back({inwardMagnitude * unitDirVec.x + circleCenter.x,
+                                      inwardMagnitude * unitDirVec.y + circleCenter.y, v.bulge});
+    }
+    test_case.addOffsetTest(offsetOutwardDelta, std::move(offsetOutwardVertexes), true);
+    test_case.addOffsetTest(offsetInwardDelta, std::move(offsetInwardVertexes), true);
+
+    // offsetting inward by full radius or more should result in no offsets
+    test_case.addCollapsedOffsetTest(direction * circleRadius);
+    test_case.addCollapsedOffsetTest(direction * 1.5 * circleRadius);
+    test_case.addCollapsedOffsetTest(direction * 2.0 * circleRadius);
+
     cases.push_back(std::move(test_case));
   };
 
@@ -189,16 +232,29 @@ void addCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real c
 
   vertexes = {{circleCenter.x, circleCenter.y - circleRadius, 1},
               {circleCenter.x, circleCenter.y + circleRadius, 1}};
-
   if (reverse) {
     std::reverse(vertexes.begin(), vertexes.end());
   }
-
   addCase("ccw_circle_y_aligned", vertexes, 1);
+
   for (auto &v : vertexes) {
     v = {v.x, v.y, -v.bulge};
   }
   addCase("cw_circle_y_aligned", vertexes, -1);
+
+  vertexes = {{circleCenter.x + circleRadius * std::cos(PI() / 4),
+               circleCenter.y + circleRadius * std::sin(PI() / 4), 1},
+              {circleCenter.x + circleRadius * std::cos(5 * PI() / 4),
+               circleCenter.y + circleRadius * std::sin(5 * PI() / 4), 1}};
+  if (reverse) {
+    std::reverse(vertexes.begin(), vertexes.end());
+  }
+  addCase("ccw_circle_not_axis_aligned", vertexes, 1);
+
+  for (auto &v : vertexes) {
+    v = {v.x, v.y, -v.bulge};
+  }
+  addCase("cw_circle_not_axis_aligned", vertexes, -1);
 }
 
 std::vector<cavc_plineFunctionsTestCase> createCircleCases() {
@@ -243,7 +299,7 @@ TEST_P(cavc_plineFunctionTests, cavc_get_path_length) {
   if (test_case.skipPathLengthTest()) {
     GTEST_SKIP();
   }
-  ASSERT_EQ(cavc_get_path_length(test_case.pline), test_case.pathLength);
+  ASSERT_NEAR(cavc_get_path_length(test_case.pline), test_case.pathLength, TEST_EPSILON());
 }
 
 TEST_P(cavc_plineFunctionTests, cavc_get_area) {
@@ -251,7 +307,7 @@ TEST_P(cavc_plineFunctionTests, cavc_get_area) {
   if (test_case.skipAreaTest()) {
     GTEST_SKIP();
   }
-  ASSERT_EQ(cavc_get_area(test_case.pline), test_case.signedArea);
+  ASSERT_NEAR(cavc_get_area(test_case.pline), test_case.signedArea, TEST_EPSILON());
 }
 
 TEST_P(cavc_plineFunctionTests, cavc_get_winding_number) {
@@ -279,10 +335,10 @@ TEST_P(cavc_plineFunctionTests, cavc_get_extents) {
   cavc_real maxX;
   cavc_real maxY;
   cavc_get_extents(test_case.pline, &minX, &minY, &maxX, &maxY);
-  EXPECT_EQ(minX, test_case.minX);
-  EXPECT_EQ(minY, test_case.minY);
-  EXPECT_EQ(maxX, test_case.maxX);
-  EXPECT_EQ(maxY, test_case.maxY);
+  EXPECT_NEAR(minX, test_case.minX, TEST_EPSILON());
+  EXPECT_NEAR(minY, test_case.minY, TEST_EPSILON());
+  EXPECT_NEAR(maxX, test_case.maxX, TEST_EPSILON());
+  EXPECT_NEAR(maxY, test_case.maxY, TEST_EPSILON());
 }
 
 TEST_P(cavc_plineFunctionTests, cavc_get_closest_point) {
@@ -316,6 +372,110 @@ TEST_P(cavc_plineFunctionTests, cavc_get_closest_point) {
 
   ASSERT_THAT(indexResults, testing::Pointwise(testing::Eq(), test_case.closestPointIndexResults));
   ASSERT_THAT(pointResults, testing::Pointwise(PointFuzzyEqual(), test_case.closestPointResults));
-  ASSERT_THAT(distanceResults,
-              testing::Pointwise(testing::DoubleEq(), test_case.closestPointDistanceResults));
+  ASSERT_THAT(distanceResults, testing::Pointwise(testing::DoubleNear(TEST_EPSILON()),
+                                                  test_case.closestPointDistanceResults));
+}
+
+TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
+  cavc_plineFunctionsTestCase const &test_case = GetParam();
+  if (test_case.skipOffsetTest() && test_case.skipCollapsedOffsetTest()) {
+    GTEST_SKIP();
+  }
+
+  if (!test_case.skipOffsetTest()) {
+    std::vector<cavc_pline_list *> results(test_case.offsetTestDeltas.size());
+    for (std::size_t i = 0; i < test_case.offsetTestDeltas.size(); ++i) {
+      cavc_parallel_offet(test_case.pline, test_case.offsetTestDeltas[i], &results[i], 0);
+    }
+
+    // test there is only one resulting offset pline
+    std::vector<uint32_t> resultCounts;
+    for (auto const &result : results) {
+      resultCounts.push_back(cavc_pline_list_count(result));
+    }
+    ASSERT_THAT(resultCounts, testing::Each(1));
+
+    // test is closed is correct
+    std::vector<bool> isClosedResults;
+    for (auto const &result : results) {
+      isClosedResults.push_back(cavc_pline_is_closed(cavc_pline_list_get(result, 0)));
+    }
+    ASSERT_THAT(isClosedResults, testing::Pointwise(testing::Eq(), test_case.resultIsClosed));
+
+    // test all vertex values
+    std::vector<std::vector<cavc_vertex>> vertexResults;
+    for (auto const &result : results) {
+      cavc_pline *pline = cavc_pline_list_get(result, 0);
+      vertexResults.push_back(std::vector<cavc_vertex>(cavc_pline_vertex_count(pline)));
+      cavc_pline_vertex_data(pline, &vertexResults.back()[0]);
+    }
+
+    ASSERT_THAT(vertexResults,
+                testing::Pointwise(VertexListsFuzzyEqual(), test_case.resultOffsetPlines));
+
+    for (auto result : results) {
+      cavc_pline_list_delete(result);
+    }
+  }
+
+  if (!test_case.skipCollapsedOffsetTest()) {
+    std::vector<cavc_pline_list *> results(test_case.collapsedOffsetDeltas.size());
+    for (std::size_t i = 0; i < test_case.collapsedOffsetDeltas.size(); ++i) {
+      cavc_parallel_offet(test_case.pline, test_case.collapsedOffsetDeltas[i], &results[i], 0);
+    }
+    ASSERT_THAT(results, testing::Each(
+                             testing::Truly([](auto r) { return cavc_pline_list_count(r) == 0; })));
+    for (auto result : results) {
+      cavc_pline_list_delete(result);
+    }
+  }
+}
+
+TEST_P(cavc_plineFunctionTests, cavc_combine_plines) {
+  cavc_plineFunctionsTestCase const &test_case = GetParam();
+  cavc_pline_list *remaining = nullptr;
+  cavc_pline_list *subtracted = nullptr;
+
+  // test union with self is always self
+  cavc_combine_plines(test_case.pline, test_case.pline, 0, &remaining, &subtracted);
+  ASSERT_EQ(cavc_pline_list_count(remaining), 1);
+  ASSERT_EQ(cavc_pline_list_count(subtracted), 0);
+  cavc_pline *combineResult = cavc_pline_list_get(remaining, 0);
+  std::vector<cavc_vertex> resultVertexes(cavc_pline_vertex_count(combineResult));
+  cavc_pline_vertex_data(combineResult, &resultVertexes[0]);
+  ASSERT_EQ(resultVertexes.size(), test_case.plineVertexes.size());
+  ASSERT_THAT(resultVertexes, testing::Pointwise(VertexEqual(), test_case.plineVertexes));
+  cavc_pline_list_delete(remaining);
+  cavc_pline_list_delete(subtracted);
+
+  // test exclude with self is always empty
+  cavc_combine_plines(test_case.pline, test_case.pline, 1, &remaining, &subtracted);
+  ASSERT_EQ(cavc_pline_list_count(remaining), 0);
+  ASSERT_EQ(cavc_pline_list_count(subtracted), 0);
+  cavc_pline_list_delete(remaining);
+  cavc_pline_list_delete(subtracted);
+
+  // test intersect with self is always self
+  cavc_combine_plines(test_case.pline, test_case.pline, 2, &remaining, &subtracted);
+  ASSERT_EQ(cavc_pline_list_count(remaining), 1);
+  ASSERT_EQ(cavc_pline_list_count(subtracted), 0);
+  combineResult = cavc_pline_list_get(remaining, 0);
+  resultVertexes.resize(cavc_pline_vertex_count(combineResult));
+  cavc_pline_vertex_data(combineResult, &resultVertexes[0]);
+  ASSERT_EQ(resultVertexes.size(), test_case.plineVertexes.size());
+  ASSERT_THAT(resultVertexes, testing::Pointwise(VertexEqual(), test_case.plineVertexes));
+  cavc_pline_list_delete(remaining);
+  cavc_pline_list_delete(subtracted);
+
+  // test XOR with self is always empty
+  cavc_combine_plines(test_case.pline, test_case.pline, 3, &remaining, &subtracted);
+  ASSERT_EQ(cavc_pline_list_count(remaining), 0);
+  ASSERT_EQ(cavc_pline_list_count(subtracted), 0);
+  cavc_pline_list_delete(remaining);
+  cavc_pline_list_delete(subtracted);
+}
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

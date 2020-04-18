@@ -1,8 +1,8 @@
 #include "c_api_test_helpers.hpp"
 #include "cavaliercontours.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <vector>
-#include "gmock/gmock.h"
 
 class cavc_plineTests : public ::testing::Test {
 protected:
@@ -11,9 +11,9 @@ protected:
   void TearDown() override;
 
   std::vector<cavc_vertex> pline1Vertexes;
-  cavc_pline *pline1;
-  cavc_pline *pline2;
-  std::size_t origPline1Size;
+  cavc_pline *pline1 = nullptr;
+  cavc_pline *pline2 = nullptr;
+  std::size_t origPline1Size = 0;
   uint32_t initialPline1Size() { return static_cast<uint32_t>(origPline1Size); }
 };
 
@@ -135,4 +135,9 @@ TEST_F(cavc_plineTests, cavc_pline_clear) {
 
   cavc_pline_clear(pline2);
   ASSERT_EQ(cavc_pline_vertex_count(pline2), 0);
+}
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

@@ -125,8 +125,8 @@ CAVC_API cavc_pline *cavc_pline_list_release(cavc_pline_list *pline_list, uint32
 // forcing certain behaviors in the offset generation, more flags may be added in future versions.
 // If no flags are set then the polyline is assumed to have no self intersects.
 // 0x1 = Indicates the polyline may have self intersects.
-CAVC_API int cavc_parallel_offet(cavc_pline const *pline, cavc_real delta, cavc_pline_list **output,
-                                 int option_flags);
+CAVC_API void cavc_parallel_offet(cavc_pline const *pline, cavc_real delta,
+                                  cavc_pline_list **output, int option_flags);
 
 // Combines two non-self intersecting closed polylines, pline_a and pline_b.
 // For union combine_mode = 0

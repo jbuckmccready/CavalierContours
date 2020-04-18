@@ -16,7 +16,11 @@ template <typename Real> struct ProcessForCombineResult {
   std::vector<PlineIntersect<Real>> coincidentSliceEndPoints;
   bool pline1IsCW = false;
   bool pline2IsCW = false;
-  bool completelyCoincident = false;
+  bool completelyCoincident() const {
+    return coincidentSliceStartPoints.size() == 1 && coincidentSliceEndPoints.size() == 1 &&
+           fuzzyEqual(coincidentSliceStartPoints[0].pos, coincidentSliceEndPoints[0].pos,
+                      utils::realPrecision<Real>());
+  }
 
   bool plineOpposingDirections() const { return pline1IsCW != pline2IsCW; }
 
@@ -381,7 +385,7 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
   };
 
   auto performUnion = [&] {
-    if (combineInfo.completelyCoincident) {
+    if (combineInfo.completelyCoincident()) {
       result.remaining.push_back(plineA);
       return;
     }
@@ -397,8 +401,8 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
     } else {
       std::vector<Polyline<Real>> slicesRemaining;
       // slice plineB, keeping all slices not in plineA
-      sliceAtIntersects(plineB, combineInfo, true, [&](auto pt) { return !pointInA(pt); },
-                        slicesRemaining);
+      sliceAtIntersects(
+          plineB, combineInfo, true, [&](auto pt) { return !pointInA(pt); }, slicesRemaining);
 
       // when joining the slices in a union we want them oriented the same
       if (combineInfo.plineOpposingDirections()) {
@@ -408,8 +412,8 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
       }
 
       // slice plineA, keeping all slices not in plineB
-      sliceAtIntersects(plineA, combineInfo, false, [&](auto pt) { return !pointInB(pt); },
-                        slicesRemaining);
+      sliceAtIntersects(
+          plineA, combineInfo, false, [&](auto pt) { return !pointInB(pt); }, slicesRemaining);
 
       // include coincident slices for the union (note they are oriented the same as plineA/pline1)
       slicesRemaining.insert(slicesRemaining.end(), combineInfo.coincidentSlices.begin(),
@@ -432,7 +436,7 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
   };
 
   auto performExclude = [&] {
-    if (combineInfo.completelyCoincident) {
+    if (combineInfo.completelyCoincident()) {
       // nothing left
       return;
     }
@@ -463,8 +467,8 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
       const std::size_t plineBSliceCount = slicesRemaining.size();
 
       // slice plineA, keeping all slices not in plineB
-      sliceAtIntersects(plineA, combineInfo, false, [&](auto pt) { return !pointInB(pt); },
-                        slicesRemaining);
+      sliceAtIntersects(
+          plineA, combineInfo, false, [&](auto pt) { return !pointInB(pt); }, slicesRemaining);
 
       auto stitchSelector = createOpposingSelector(plineBSliceCount);
       result.remaining = stitchOrderedSlicesIntoClosedPolylines(slicesRemaining, stitchSelector);
@@ -472,7 +476,7 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
   };
 
   auto performIntersect = [&] {
-    if (combineInfo.completelyCoincident) {
+    if (combineInfo.completelyCoincident()) {
       result.remaining.push_back(plineA);
       return;
     }
@@ -502,11 +506,10 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
                              combineInfo.coincidentSlices.end());
       result.remaining = stitchOrderedSlicesIntoClosedPolylines(slicesRemaining);
     }
-
   };
 
   auto performXOR = [&] {
-    if (combineInfo.completelyCoincident) {
+    if (combineInfo.completelyCoincident()) {
       return;
     }
     if (!combineInfo.anyIntersects()) {
@@ -523,7 +526,8 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
     } else {
       std::vector<Polyline<Real>> slicesRemaining;
       // slice plineB, keeping all slices
-      sliceAtIntersects(plineB, combineInfo, true, [&](auto) { return true; }, slicesRemaining);
+      sliceAtIntersects(
+          plineB, combineInfo, true, [&](auto) { return true; }, slicesRemaining);
 
       // when joining the slices we want them oriented opposite
       if (!combineInfo.plineOpposingDirections()) {
@@ -535,7 +539,8 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
       const std::size_t plineBSliceCount = slicesRemaining.size();
 
       // slice plineA, keeping all slices
-      sliceAtIntersects(plineA, combineInfo, false, [&](auto) { return true; }, slicesRemaining);
+      sliceAtIntersects(
+          plineA, combineInfo, false, [&](auto) { return true; }, slicesRemaining);
 
       auto stitchSelector = createOpposingSelector(plineBSliceCount);
       result.remaining = stitchOrderedSlicesIntoClosedPolylines(slicesRemaining, stitchSelector);
@@ -559,5 +564,5 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
 
   return result;
 }
-}
+} // namespace cavc
 #endif // CAVC_POLYLINECOMBINE_HPP
