@@ -40,6 +40,9 @@ public:
   /// index pair, stops when all indices have been visited or visitor returns false. visitor
   /// signature is bool(std::size_t, std::size_t).
   template <typename VisitorF> void visitSegIndices(VisitorF &&visitor) const {
+    if (m_vertexes.size() < 2) {
+      return;
+    }
     std::size_t i;
     std::size_t j;
     if (m_isClosed) {
@@ -88,8 +91,9 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
   AABB<Real> result{pline[0].x(), pline[0].y(), pline[0].x(), pline[0].y()};
 
   auto visitor = [&](std::size_t i, std::size_t j) {
+    PlineVertex<Real> const &v1 = pline[i];
     PlineVertex<Real> const &v2 = pline[j];
-    if (v2.bulgeIsZero()) {
+    if (v1.bulgeIsZero()) {
       if (v2.x() < result.xMin) {
         result.xMin = v2.x();
       } else if (v2.x() > result.xMax) {
@@ -103,7 +107,6 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
       }
 
     } else {
-      PlineVertex<Real> const &v1 = pline[i];
       AABB<Real> arcBB;
       // bounds of chord
       if (v1.x() < v2.x()) {
@@ -282,8 +285,7 @@ template <typename Real> Real getArea(Polyline<Real> const &pline) {
   // if it is a clockwise arc. The area of the circular segments are computed by finding the area of
   // the arc sector minus the area of the triangle defined by the chord and center of circle.
   // See https://en.wikipedia.org/wiki/Circular_segment
-  if ((!pline.isClosed() && !(fuzzyEqual(pline[0].pos(), pline.lastVertex().pos()))) ||
-      pline.size() < 2) {
+  if (!pline.isClosed() || pline.size() < 2) {
     return Real(0);
   }
 
@@ -357,6 +359,9 @@ public:
     std::size_t nextIndex = utils::nextWrappingIndex(m_index, pline);
     if (fuzzyEqual(m_point, pline[nextIndex].pos())) {
       m_index = nextIndex;
+    }
+    if (!pline.isClosed() && pline.size() > 1 && m_index == pline.size() - 1) {
+      m_index -= 1;
     }
     // we used the squared distance while iterating and comparing, take sqrt for actual distance
     m_distance = std::sqrt(m_distance);
@@ -508,6 +513,9 @@ StaticSpatialIndex<Real> createApproxSpatialIndex(Polyline<Real> const &pline) {
 
 /// Calculate the total path length of a polyline.
 template <typename Real> Real getPathLength(Polyline<Real> const &pline) {
+  if (pline.size() < 2) {
+    return Real(0);
+  }
   Real result = Real(0);
   auto visitor = [&](std::size_t i, std::size_t j) {
     result += segLength(pline[i], pline[j]);
@@ -525,7 +533,7 @@ template <typename Real> Real getPathLength(Polyline<Real> const &pline) {
 /// result is not defined if the point lies ontop of the polyline.
 template <typename Real>
 int getWindingNumber(Polyline<Real> const &pline, Vector2<Real> const &point) {
-  if (!pline.isClosed() && !(fuzzyEqual(pline[0].pos(), pline.lastVertex().pos()))) {
+  if (!pline.isClosed() || pline.size() < 2) {
     return 0;
   }
 

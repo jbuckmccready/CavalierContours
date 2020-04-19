@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+namespace t = testing;
 struct cavc_plineFunctionsTestCase {
 
   cavc_plineFunctionsTestCase(std::string name, std::vector<cavc_vertex> vertexes, bool isClosed)
@@ -77,14 +79,12 @@ struct cavc_plineFunctionsTestCase {
 
   std::vector<cavc_real> offsetTestDeltas;
   std::vector<std::vector<cavc_vertex>> resultOffsetPlines;
-  std::vector<bool> resultIsClosed;
   bool skipOffsetTest() const { return offsetTestDeltas.empty(); }
 
   // add an offset test input
-  void addOffsetTest(cavc_real offsetDelta, std::vector<cavc_vertex> vertexes, bool isClosed) {
+  void addOffsetTest(cavc_real offsetDelta, std::vector<cavc_vertex> vertexes) {
     offsetTestDeltas.push_back(offsetDelta);
     resultOffsetPlines.emplace_back(std::move(vertexes));
-    resultIsClosed.push_back(isClosed);
   }
 
   std::vector<cavc_real> collapsedOffsetDeltas;
@@ -101,12 +101,28 @@ std::ostream &operator<<(std::ostream &os, cavc_plineFunctionsTestCase const &c)
   return os;
 }
 
+// Adds closest point test points for ontop of all the vertexes of the test case
+void addClosestPointOnVertexes(cavc_plineFunctionsTestCase &testCase) {
+  if (testCase.plineVertexes.empty()) {
+    return;
+  }
+  auto &vertexes = testCase.plineVertexes;
+  for (std::size_t i = 0; i < vertexes.size() - 1; ++i) {
+    auto const &v = vertexes[i];
+    testCase.addClosestPointTestPt({v.x, v.y}, {v.x, v.y}, 0.0, static_cast<uint32_t>(i));
+  }
+
+  std::size_t lastPtIndex = testCase.isClosed() ? vertexes.size() - 1 : vertexes.size() - 2;
+  auto const &v = vertexes.back();
+  testCase.addClosestPointTestPt({v.x, v.y}, {v.x, v.y}, 0.0, static_cast<uint32_t>(lastPtIndex));
+}
+
 void addCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real circleRadius,
                     cavc_point circleCenter, bool reverse) {
-  cavc_real expectedCircleArea = PI() * circleRadius * circleRadius;
-  cavc_real expectedCircleLength = 2 * PI() * circleRadius;
+  cavc_real expectedArea = PI() * circleRadius * circleRadius;
+  cavc_real expectedLength = 2 * PI() * circleRadius;
 
-  auto createName = [&](auto n) {
+  auto createCaseName = [&](std::string const &n) {
     std::stringstream ss;
     ss << n;
     if (reverse) {
@@ -116,43 +132,41 @@ void addCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real c
     return ss.str();
   };
 
-  auto addCase = [&](std::string name, std::vector<cavc_vertex> const &vertexes, int direction) {
-    cavc_plineFunctionsTestCase test_case(createName(name), vertexes, true);
-    test_case.signedArea = direction * expectedCircleArea;
-    test_case.pathLength = expectedCircleLength;
-    test_case.minX = circleCenter.x - circleRadius;
-    test_case.minY = circleCenter.y - circleRadius;
-    test_case.maxX = circleCenter.x + circleRadius;
-    test_case.maxY = circleCenter.y + circleRadius;
+  auto addCase = [&](std::string const &name, std::vector<cavc_vertex> const &vertexes,
+                     int direction) {
+    cavc_plineFunctionsTestCase testCase(createCaseName(name), vertexes, true);
+    testCase.signedArea = direction * expectedArea;
+    testCase.pathLength = expectedLength;
+    testCase.minX = circleCenter.x - circleRadius;
+    testCase.minY = circleCenter.y - circleRadius;
+    testCase.maxX = circleCenter.x + circleRadius;
+    testCase.maxY = circleCenter.y + circleRadius;
 
     // axis aligned and center cases
-    test_case.addWindingNumberTestPt({test_case.minX - 0.01, circleCenter.y}, 0);
-    test_case.addWindingNumberTestPt({test_case.maxX + 0.01, circleCenter.y}, 0);
-    test_case.addWindingNumberTestPt({circleCenter.x, test_case.minY - 0.01}, 0);
-    test_case.addWindingNumberTestPt({circleCenter.x, test_case.maxY + 0.01}, 0);
-    test_case.addWindingNumberTestPt(circleCenter, direction);
-    test_case.addWindingNumberTestPt({test_case.minX + 0.01, circleCenter.y}, direction);
-    test_case.addWindingNumberTestPt({test_case.maxX - 0.01, circleCenter.y}, direction);
-    test_case.addWindingNumberTestPt({circleCenter.x, test_case.minY + 0.01}, direction);
-    test_case.addWindingNumberTestPt({circleCenter.x, test_case.maxY - 0.01}, direction);
+    testCase.addWindingNumberTestPt({testCase.minX - 0.01, circleCenter.y}, 0);
+    testCase.addWindingNumberTestPt({testCase.maxX + 0.01, circleCenter.y}, 0);
+    testCase.addWindingNumberTestPt({circleCenter.x, testCase.minY - 0.01}, 0);
+    testCase.addWindingNumberTestPt({circleCenter.x, testCase.maxY + 0.01}, 0);
+    testCase.addWindingNumberTestPt(circleCenter, direction);
+    testCase.addWindingNumberTestPt({testCase.minX + 0.01, circleCenter.y}, direction);
+    testCase.addWindingNumberTestPt({testCase.maxX - 0.01, circleCenter.y}, direction);
+    testCase.addWindingNumberTestPt({circleCenter.x, testCase.minY + 0.01}, direction);
+    testCase.addWindingNumberTestPt({circleCenter.x, testCase.maxY - 0.01}, direction);
 
-    for (std::size_t i = 0; i < vertexes.size(); ++i) {
-      auto const &v = vertexes[i];
-      test_case.addClosestPointTestPt({v.x, v.y}, {v.x, v.y}, 0.0, static_cast<uint32_t>(i));
-    }
+    addClosestPointOnVertexes(testCase);
 
-    test_case.addClosestPointTestPt({circleCenter.x - 0.1, circleCenter.y},
-                                    {circleCenter.x - circleRadius, circleCenter.y},
-                                    circleRadius - 0.1);
-    test_case.addClosestPointTestPt({circleCenter.x + 0.1, circleCenter.y},
-                                    {circleCenter.x + circleRadius, circleCenter.y},
-                                    circleRadius - 0.1);
-    test_case.addClosestPointTestPt({circleCenter.x, circleCenter.y - 0.1},
-                                    {circleCenter.x, circleCenter.y - circleRadius},
-                                    circleRadius - 0.1);
-    test_case.addClosestPointTestPt({circleCenter.x, circleCenter.y + 0.1},
-                                    {circleCenter.x, circleCenter.y + circleRadius},
-                                    circleRadius - 0.1);
+    testCase.addClosestPointTestPt({circleCenter.x - 0.1, circleCenter.y},
+                                   {circleCenter.x - circleRadius, circleCenter.y},
+                                   circleRadius - 0.1);
+    testCase.addClosestPointTestPt({circleCenter.x + 0.1, circleCenter.y},
+                                   {circleCenter.x + circleRadius, circleCenter.y},
+                                   circleRadius - 0.1);
+    testCase.addClosestPointTestPt({circleCenter.x, circleCenter.y - 0.1},
+                                   {circleCenter.x, circleCenter.y - circleRadius},
+                                   circleRadius - 0.1);
+    testCase.addClosestPointTestPt({circleCenter.x, circleCenter.y + 0.1},
+                                   {circleCenter.x, circleCenter.y + circleRadius},
+                                   circleRadius - 0.1);
 
     // points at 45 deg inside and outside
     std::vector<cavc_point> insideAt45Deg;
@@ -181,12 +195,12 @@ void addCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real c
     }
 
     for (std::size_t i = 0; i < insideAt45Deg.size(); ++i) {
-      test_case.addWindingNumberTestPt(insideAt45Deg[i], direction);
-      test_case.addWindingNumberTestPt(outsideAt45Deg[i], 0);
-      test_case.addClosestPointTestPt(insideAt45Deg[i], onCirclAt45deg[i],
-                                      circleRadius - insideDist);
-      test_case.addClosestPointTestPt(outsideAt45Deg[i], onCirclAt45deg[i],
-                                      outsideDist - circleRadius);
+      testCase.addWindingNumberTestPt(insideAt45Deg[i], direction);
+      testCase.addWindingNumberTestPt(outsideAt45Deg[i], 0);
+      testCase.addClosestPointTestPt(insideAt45Deg[i], onCirclAt45deg[i],
+                                     circleRadius - insideDist);
+      testCase.addClosestPointTestPt(outsideAt45Deg[i], onCirclAt45deg[i],
+                                     outsideDist - circleRadius);
     }
 
     cavc_real offsetOutwardDelta = -direction * 0.25 * circleRadius;
@@ -195,7 +209,7 @@ void addCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real c
     cavc_real offsetInwardDelta = direction * 0.5 * circleRadius;
     std::vector<cavc_vertex> offsetInwardVertexes;
 
-    for (auto const &v : test_case.plineVertexes) {
+    for (auto const &v : testCase.plineVertexes) {
       cavc_point dirVec = {v.x - circleCenter.x, v.y - circleCenter.y};
       cavc_real dirVecLength = std::sqrt(dirVec.x * dirVec.x + dirVec.y * dirVec.y);
       cavc_point unitDirVec = {dirVec.x / dirVecLength, dirVec.y / dirVecLength};
@@ -206,15 +220,15 @@ void addCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real c
       offsetInwardVertexes.push_back({inwardMagnitude * unitDirVec.x + circleCenter.x,
                                       inwardMagnitude * unitDirVec.y + circleCenter.y, v.bulge});
     }
-    test_case.addOffsetTest(offsetOutwardDelta, std::move(offsetOutwardVertexes), true);
-    test_case.addOffsetTest(offsetInwardDelta, std::move(offsetInwardVertexes), true);
+    testCase.addOffsetTest(offsetOutwardDelta, std::move(offsetOutwardVertexes));
+    testCase.addOffsetTest(offsetInwardDelta, std::move(offsetInwardVertexes));
 
     // offsetting inward by full radius or more should result in no offsets
-    test_case.addCollapsedOffsetTest(direction * circleRadius);
-    test_case.addCollapsedOffsetTest(direction * 1.5 * circleRadius);
-    test_case.addCollapsedOffsetTest(direction * 2.0 * circleRadius);
+    testCase.addCollapsedOffsetTest(direction * circleRadius);
+    testCase.addCollapsedOffsetTest(direction * 1.5 * circleRadius);
+    testCase.addCollapsedOffsetTest(direction * 2.0 * circleRadius);
 
-    cases.push_back(std::move(test_case));
+    cases.push_back(std::move(testCase));
   };
 
   std::vector<cavc_vertex> vertexes = {{circleCenter.x - circleRadius, circleCenter.y, 1},
@@ -271,28 +285,292 @@ std::vector<cavc_plineFunctionsTestCase> createCircleCases() {
   return result;
 }
 
-class cavc_plineFunctionTests : public testing::TestWithParam<cavc_plineFunctionsTestCase> {
+void addHalfCircleCases(std::vector<cavc_plineFunctionsTestCase> &cases, cavc_real circleRadius,
+                        cavc_point circleCenter, bool isClosed) {
+  cavc_real expectedArea = isClosed ? PI() * circleRadius * circleRadius / 2 : 0;
+  cavc_real expectedLength = PI() * circleRadius;
+  if (isClosed) {
+    expectedLength += 2 * circleRadius;
+  }
+
+  auto createCaseName = [&](std::string const &n) {
+    std::stringstream ss;
+    ss << n;
+    if (isClosed) {
+      ss << "_closed";
+    } else {
+      ss << "_open";
+    }
+    ss << " (radius: " << circleRadius << ", center: " << circleCenter << ")";
+    return ss.str();
+  };
+
+  auto addCase = [&](std::string const &name, std::vector<cavc_vertex> const &vertexes,
+                     int direction, bool isXAligned) {
+    cavc_plineFunctionsTestCase testCase(createCaseName(name), vertexes, isClosed);
+    testCase.signedArea = direction * expectedArea;
+    testCase.pathLength = expectedLength;
+    testCase.minX = circleCenter.x - circleRadius;
+    testCase.minY = circleCenter.y - circleRadius;
+    testCase.maxX = circleCenter.x + circleRadius;
+    testCase.maxY = circleCenter.y + circleRadius;
+    // set extents (note we only start from x negative or y negative)
+    if (direction > 0) {
+      if (isXAligned) {
+        testCase.maxY -= circleRadius;
+      } else {
+        testCase.minX += circleRadius;
+      }
+    } else {
+      if (isXAligned) {
+        testCase.minY += circleRadius;
+      } else {
+        testCase.maxX -= circleRadius;
+      }
+    }
+
+    int expectedWindingInside = isClosed ? direction : 0;
+    // axis aligned and center cases
+    testCase.addWindingNumberTestPt({testCase.minX - 0.01, circleCenter.y}, 0);
+    testCase.addWindingNumberTestPt({testCase.maxX + 0.01, circleCenter.y}, 0);
+    testCase.addWindingNumberTestPt({circleCenter.x, testCase.minY - 0.01}, 0);
+    testCase.addWindingNumberTestPt({circleCenter.x, testCase.maxY + 0.01}, 0);
+
+    if (isXAligned) {
+      testCase.addWindingNumberTestPt({circleCenter.x, testCase.minY + 0.01},
+                                      expectedWindingInside);
+      testCase.addWindingNumberTestPt({circleCenter.x, testCase.maxY - 0.01},
+                                      expectedWindingInside);
+
+    } else {
+      testCase.addWindingNumberTestPt({testCase.minX + 0.01, circleCenter.y},
+                                      expectedWindingInside);
+      testCase.addWindingNumberTestPt({testCase.maxX - 0.01, circleCenter.y},
+                                      expectedWindingInside);
+    }
+
+    addClosestPointOnVertexes(testCase);
+
+    // if not closed then index will always be 0 since it returns the starting vertex of the segment
+    // closest
+    uint32_t endPointIndex = isClosed ? 1 : 0;
+    if (isXAligned) {
+      // test just outside ends
+      testCase.addClosestPointTestPt({testCase.minX - 0.01, circleCenter.y},
+                                     {testCase.minX, circleCenter.y}, 0.01, 0);
+      testCase.addClosestPointTestPt({testCase.maxX + 0.01, circleCenter.y},
+                                     {testCase.maxX, circleCenter.y}, 0.01, endPointIndex);
+      // test near arc segment midpoint
+      cavc_real arcMidpointY = direction > 0 ? testCase.minY : testCase.maxY;
+      testCase.addClosestPointTestPt({circleCenter.x, arcMidpointY - 0.01},
+                                     {circleCenter.x, arcMidpointY}, 0.01, 0);
+      testCase.addClosestPointTestPt({circleCenter.x, arcMidpointY + 0.01},
+                                     {circleCenter.x, arcMidpointY}, 0.01, 0);
+      if (isClosed) {
+        // test near straight segment midpoint
+        testCase.addClosestPointTestPt({circleCenter.x, circleCenter.y - 0.01},
+                                       {circleCenter.x, circleCenter.y}, 0.01, 1);
+        testCase.addClosestPointTestPt({circleCenter.x, circleCenter.y + 0.01},
+                                       {circleCenter.x, circleCenter.y}, 0.01, 1);
+      }
+    } else {
+      // test just outside ends
+      testCase.addClosestPointTestPt({circleCenter.x, testCase.minY - 0.01},
+                                     {circleCenter.x, testCase.minY}, 0.01, 0);
+      testCase.addClosestPointTestPt({circleCenter.x, testCase.maxY + 0.01},
+                                     {circleCenter.x, testCase.maxY}, 0.01, endPointIndex);
+      // test near arc segment midpoint
+      cavc_real arcMidpointX = direction > 0 ? testCase.maxX : testCase.minX;
+      testCase.addClosestPointTestPt({arcMidpointX - 0.01, circleCenter.y},
+                                     {arcMidpointX, circleCenter.y}, 0.01, 0);
+      testCase.addClosestPointTestPt({arcMidpointX + 0.01, circleCenter.y},
+                                     {arcMidpointX, circleCenter.y}, 0.01, 0);
+      if (isClosed) {
+        // test near straight segment midpoint
+        testCase.addClosestPointTestPt({circleCenter.x - 0.01, circleCenter.y},
+                                       {circleCenter.x, circleCenter.y}, 0.01, 1);
+        testCase.addClosestPointTestPt({circleCenter.x + 0.01, circleCenter.y},
+                                       {circleCenter.x, circleCenter.y}, 0.01, 1);
+      }
+    }
+
+    cavc_real offsetOutwardDelta = -direction * 0.25 * circleRadius;
+    std::vector<cavc_vertex> offsetOutwardVertexes;
+
+    cavc_real offsetInwardDelta = direction * 0.4 * circleRadius;
+    std::vector<cavc_vertex> offsetInwardVertexes;
+
+    cavc_real absOutwardDelta = std::abs(offsetOutwardDelta);
+    cavc_real absInwardDelta = std::abs(offsetInwardDelta);
+    cavc_real outwardMagnitude = circleRadius + absOutwardDelta;
+    cavc_real inwardMagnitude = circleRadius - absInwardDelta;
+
+    for (auto const &v : testCase.plineVertexes) {
+      cavc_point dirVec = {v.x - circleCenter.x, v.y - circleCenter.y};
+      cavc_real dirVecLength = std::sqrt(dirVec.x * dirVec.x + dirVec.y * dirVec.y);
+      cavc_point unitDirVec = {dirVec.x / dirVecLength, dirVec.y / dirVecLength};
+      offsetOutwardVertexes.push_back({outwardMagnitude * unitDirVec.x + circleCenter.x,
+                                       outwardMagnitude * unitDirVec.y + circleCenter.y, v.bulge});
+      offsetInwardVertexes.push_back({inwardMagnitude * unitDirVec.x + circleCenter.x,
+                                      inwardMagnitude * unitDirVec.y + circleCenter.y, v.bulge});
+    }
+    if (isClosed) {
+      // must add connection arc vertexes for outward offset and find intersects for inward offset
+      // (4 axis aligned cases)
+
+      // for computing circle intersects on inward offsets
+      auto intersectsAtYVal = [&](cavc_real y) {
+        cavc_real yTerm = (y - circleCenter.y);
+        cavc_real r = circleRadius - absInwardDelta;
+        cavc_real root = std::sqrt(r * r - yTerm * yTerm);
+        return std::make_pair(cavc_point{circleCenter.x + root, y},
+                              cavc_point{circleCenter.x - root, y});
+      };
+      auto intersectsAtXVal = [&](cavc_real x) {
+        cavc_real xTerm = (x - circleCenter.x);
+        cavc_real r = circleRadius - absInwardDelta;
+        cavc_real root = std::sqrt(r * r - xTerm * xTerm);
+        return std::make_pair(cavc_point{x, circleCenter.y + root},
+                              cavc_point{x, circleCenter.y - root});
+      };
+      // for finding bulge between points for inward offsets
+      auto pointAngle = [&](cavc_point p) {
+        cavc_point v = {p.x - circleCenter.x, p.y - circleCenter.y};
+        cavc_real a = std::atan2(v.y, v.x);
+
+        return a;
+      };
+      auto absBulgeBetweenPoints = [&](cavc_point p1, cavc_point p2) {
+        cavc_real a1 = pointAngle(p1);
+        cavc_real a2 = pointAngle(p2);
+        cavc_real aDiff = a1 - a2;
+        aDiff = std::fmod((aDiff + PI()), (2 * PI())) - PI();
+        return std::abs(std::tan(aDiff / 4));
+      };
+
+      cavc_real rightAngleBulge = std::tan(PI() / 8);
+      if (isXAligned) {
+        if (direction > 0) {
+          // line segment is on y max edge
+          offsetOutwardVertexes.back().bulge = rightAngleBulge;
+          offsetOutwardVertexes.push_back({testCase.maxX, circleCenter.y + absOutwardDelta, 0});
+          offsetOutwardVertexes.push_back(
+              {testCase.minX, circleCenter.y + absOutwardDelta, rightAngleBulge});
+
+          cavc_real yIntr = circleCenter.y - absInwardDelta;
+          auto intrPoints = intersectsAtYVal(yIntr);
+          cavc_real absBulge = absBulgeBetweenPoints(intrPoints.first, intrPoints.second);
+          offsetInwardVertexes[0] = {intrPoints.first.x, intrPoints.first.y, 0};
+          offsetInwardVertexes[1] = {intrPoints.second.x, intrPoints.second.y, absBulge};
+        } else {
+          // line segment on y min edge
+          offsetOutwardVertexes.back().bulge = -rightAngleBulge;
+          offsetOutwardVertexes.push_back({testCase.maxX, circleCenter.y - absOutwardDelta, 0});
+          offsetOutwardVertexes.push_back(
+              {testCase.minX, circleCenter.y - absOutwardDelta, -rightAngleBulge});
+
+          cavc_real yIntr = circleCenter.y + absInwardDelta;
+          auto intrPoints = intersectsAtYVal(yIntr);
+          cavc_real absBulge = absBulgeBetweenPoints(intrPoints.first, intrPoints.second);
+          offsetInwardVertexes[0] = {intrPoints.first.x, intrPoints.first.y, 0};
+          offsetInwardVertexes[1] = {intrPoints.second.x, intrPoints.second.y, -absBulge};
+        }
+      } else {
+        if (direction > 0) {
+          // line segment on x min edge
+          offsetOutwardVertexes.back().bulge = rightAngleBulge;
+          offsetOutwardVertexes.push_back({circleCenter.x - absOutwardDelta, testCase.maxY, 0});
+          offsetOutwardVertexes.push_back(
+              {circleCenter.x - absOutwardDelta, testCase.minY, rightAngleBulge});
+
+          cavc_real xIntr = circleCenter.x + absInwardDelta;
+          auto intrPoints = intersectsAtXVal(xIntr);
+          cavc_real absBulge = absBulgeBetweenPoints(intrPoints.first, intrPoints.second);
+          offsetInwardVertexes[0] = {intrPoints.first.x, intrPoints.first.y, 0};
+          offsetInwardVertexes[1] = {intrPoints.second.x, intrPoints.second.y, absBulge};
+        } else {
+          // line segment on x max edge
+          offsetOutwardVertexes.back().bulge = -rightAngleBulge;
+          offsetOutwardVertexes.push_back({circleCenter.x + absOutwardDelta, testCase.maxY, 0});
+          offsetOutwardVertexes.push_back(
+              {circleCenter.x + absOutwardDelta, testCase.minY, -rightAngleBulge});
+
+          cavc_real xIntr = circleCenter.x - absInwardDelta;
+          auto intrPoints = intersectsAtXVal(xIntr);
+          cavc_real absBulge = absBulgeBetweenPoints(intrPoints.first, intrPoints.second);
+          offsetInwardVertexes[0] = {intrPoints.first.x, intrPoints.first.y, 0};
+          offsetInwardVertexes[1] = {intrPoints.second.x, intrPoints.second.y, -absBulge};
+        }
+      }
+    }
+    testCase.addOffsetTest(offsetOutwardDelta, std::move(offsetOutwardVertexes));
+    testCase.addOffsetTest(offsetInwardDelta, std::move(offsetInwardVertexes));
+
+    if (isClosed) {
+      // offsetting inward by half radius or more should result in no offsets if closed
+      testCase.addCollapsedOffsetTest(direction * 0.5 * circleRadius);
+    } else {
+      testCase.addCollapsedOffsetTest(direction * circleRadius);
+    }
+    testCase.addCollapsedOffsetTest(direction * 1.5 * circleRadius);
+    testCase.addCollapsedOffsetTest(direction * 2.0 * circleRadius);
+
+    cases.push_back(std::move(testCase));
+  };
+
+  std::vector<cavc_vertex> vertexes = {{circleCenter.x - circleRadius, circleCenter.y, 1},
+                                       {circleCenter.x + circleRadius, circleCenter.y, 0}};
+
+  addCase("ccw_half_circle_x_aligned", vertexes, 1, true);
+  vertexes[0].bulge = -1;
+  addCase("cw_half_circle_x_aligned", vertexes, -1, true);
+
+  vertexes = {{circleCenter.x, circleCenter.y - circleRadius, 1},
+              {circleCenter.x, circleCenter.y + circleRadius, 0}};
+  addCase("ccw_half_circle_y_aligned", vertexes, 1, false);
+  vertexes[0].bulge = -1;
+  addCase("cw_half_circle_y_aligned", vertexes, -1, false);
+}
+
+std::vector<cavc_plineFunctionsTestCase> createHalfCircleCases() {
+  std::vector<cavc_plineFunctionsTestCase> result;
+  addHalfCircleCases(result, 5.0, {1, 1}, false);
+  addHalfCircleCases(result, 5.0, {-1, 1}, false);
+  addHalfCircleCases(result, 5.0, {-1, -1}, false);
+  addHalfCircleCases(result, 5.0, {1, -1}, false);
+
+  addHalfCircleCases(result, 5.0, {1, 1}, true);
+  addHalfCircleCases(result, 5.0, {-1, 1}, true);
+  addHalfCircleCases(result, 5.0, {-1, -1}, true);
+  addHalfCircleCases(result, 5.0, {1, -1}, true);
+
+  return result;
+}
+
+class cavc_plineFunctionTests : public t::TestWithParam<cavc_plineFunctionsTestCase> {
 protected:
   void SetUp() override;
   void TearDown() override;
 
   static void SetUpTestSuite() {}
-  static void TearDownTestSuite() {
-    for (auto &c : circleCases) {
-      cavc_pline_delete(c.pline);
-    }
-  }
+  static void TearDownTestSuite() {}
 
 public:
   static std::vector<cavc_plineFunctionsTestCase> circleCases;
+  static std::vector<cavc_plineFunctionsTestCase> halfCircleCases;
 };
 void cavc_plineFunctionTests::SetUp() {}
 void cavc_plineFunctionTests::TearDown() {}
 
 std::vector<cavc_plineFunctionsTestCase> cavc_plineFunctionTests::circleCases = createCircleCases();
+std::vector<cavc_plineFunctionsTestCase> cavc_plineFunctionTests::halfCircleCases =
+    createHalfCircleCases();
 
 INSTANTIATE_TEST_SUITE_P(cavc_pline_circles, cavc_plineFunctionTests,
-                         testing::ValuesIn(cavc_plineFunctionTests::circleCases));
+                         t::ValuesIn(cavc_plineFunctionTests::circleCases));
+
+INSTANTIATE_TEST_SUITE_P(cavc_pline_half_circles, cavc_plineFunctionTests,
+                         t::ValuesIn(cavc_plineFunctionTests::halfCircleCases));
 
 TEST_P(cavc_plineFunctionTests, cavc_get_path_length) {
   cavc_plineFunctionsTestCase const &test_case = GetParam();
@@ -321,8 +599,7 @@ TEST_P(cavc_plineFunctionTests, cavc_get_winding_number) {
     windingNumberResults.push_back(cavc_get_winding_number(test_case.pline, pt));
   }
 
-  ASSERT_THAT(windingNumberResults,
-              testing::Pointwise(testing::Eq(), test_case.windingNumberResults));
+  ASSERT_THAT(windingNumberResults, t::Pointwise(t::Eq(), test_case.windingNumberResults));
 }
 
 TEST_P(cavc_plineFunctionTests, cavc_get_extents) {
@@ -335,10 +612,10 @@ TEST_P(cavc_plineFunctionTests, cavc_get_extents) {
   cavc_real maxX;
   cavc_real maxY;
   cavc_get_extents(test_case.pline, &minX, &minY, &maxX, &maxY);
-  EXPECT_NEAR(minX, test_case.minX, TEST_EPSILON());
-  EXPECT_NEAR(minY, test_case.minY, TEST_EPSILON());
-  EXPECT_NEAR(maxX, test_case.maxX, TEST_EPSILON());
-  EXPECT_NEAR(maxY, test_case.maxY, TEST_EPSILON());
+  ASSERT_NEAR(minX, test_case.minX, TEST_EPSILON());
+  ASSERT_NEAR(minY, test_case.minY, TEST_EPSILON());
+  ASSERT_NEAR(maxX, test_case.maxX, TEST_EPSILON());
+  ASSERT_NEAR(maxY, test_case.maxY, TEST_EPSILON());
 }
 
 TEST_P(cavc_plineFunctionTests, cavc_get_closest_point) {
@@ -370,10 +647,10 @@ TEST_P(cavc_plineFunctionTests, cavc_get_closest_point) {
     distanceResults.push_back(dist);
   }
 
-  ASSERT_THAT(indexResults, testing::Pointwise(testing::Eq(), test_case.closestPointIndexResults));
-  ASSERT_THAT(pointResults, testing::Pointwise(PointFuzzyEqual(), test_case.closestPointResults));
-  ASSERT_THAT(distanceResults, testing::Pointwise(testing::DoubleNear(TEST_EPSILON()),
-                                                  test_case.closestPointDistanceResults));
+  ASSERT_THAT(indexResults, t::Pointwise(t::Eq(), test_case.closestPointIndexResults));
+  ASSERT_THAT(pointResults, t::Pointwise(PointFuzzyEqual(), test_case.closestPointResults));
+  ASSERT_THAT(distanceResults,
+              t::Pointwise(t::DoubleNear(TEST_EPSILON()), test_case.closestPointDistanceResults));
 }
 
 TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
@@ -389,29 +666,26 @@ TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
     }
 
     // test there is only one resulting offset pline
-    std::vector<uint32_t> resultCounts;
-    for (auto const &result : results) {
-      resultCounts.push_back(cavc_pline_list_count(result));
-    }
-    ASSERT_THAT(resultCounts, testing::Each(1));
+    ASSERT_THAT(results, t::Each(t::ResultOf(cavc_pline_list_count, t::Eq(1))));
 
-    // test is closed is correct
-    std::vector<bool> isClosedResults;
-    for (auto const &result : results) {
-      isClosedResults.push_back(cavc_pline_is_closed(cavc_pline_list_get(result, 0)));
+    std::vector<cavc_pline *> resultPlines;
+    resultPlines.reserve(results.size());
+    for (cavc_pline_list const *list : results) {
+      resultPlines.push_back(cavc_pline_list_get(list, 0));
     }
-    ASSERT_THAT(isClosedResults, testing::Pointwise(testing::Eq(), test_case.resultIsClosed));
+
+    int caseIsClosed = test_case.isClosed() ? 1 : 0;
+    ASSERT_THAT(resultPlines, t::Each(t::ResultOf(cavc_pline_is_closed, t::Eq(caseIsClosed))));
 
     // test all vertex values
     std::vector<std::vector<cavc_vertex>> vertexResults;
-    for (auto const &result : results) {
-      cavc_pline *pline = cavc_pline_list_get(result, 0);
+    for (cavc_pline *pline : resultPlines) {
       vertexResults.push_back(std::vector<cavc_vertex>(cavc_pline_vertex_count(pline)));
       cavc_pline_vertex_data(pline, &vertexResults.back()[0]);
     }
 
-    ASSERT_THAT(vertexResults,
-                testing::Pointwise(VertexListsFuzzyEqual(), test_case.resultOffsetPlines));
+    ASSERT_THAT(vertexResults, t::Pointwise(VertexListsFuzzyEqual(test_case.isClosed()),
+                                            test_case.resultOffsetPlines));
 
     for (auto result : results) {
       cavc_pline_list_delete(result);
@@ -423,8 +697,7 @@ TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
     for (std::size_t i = 0; i < test_case.collapsedOffsetDeltas.size(); ++i) {
       cavc_parallel_offet(test_case.pline, test_case.collapsedOffsetDeltas[i], &results[i], 0);
     }
-    ASSERT_THAT(results, testing::Each(
-                             testing::Truly([](auto r) { return cavc_pline_list_count(r) == 0; })));
+    ASSERT_THAT(results, t::Each(t::ResultOf(cavc_pline_list_count, t::Eq(0))));
     for (auto result : results) {
       cavc_pline_list_delete(result);
     }
@@ -433,6 +706,9 @@ TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
 
 TEST_P(cavc_plineFunctionTests, cavc_combine_plines) {
   cavc_plineFunctionsTestCase const &test_case = GetParam();
+  if (!test_case.isClosed()) {
+    GTEST_SKIP();
+  }
   cavc_pline_list *remaining = nullptr;
   cavc_pline_list *subtracted = nullptr;
 
@@ -444,7 +720,7 @@ TEST_P(cavc_plineFunctionTests, cavc_combine_plines) {
   std::vector<cavc_vertex> resultVertexes(cavc_pline_vertex_count(combineResult));
   cavc_pline_vertex_data(combineResult, &resultVertexes[0]);
   ASSERT_EQ(resultVertexes.size(), test_case.plineVertexes.size());
-  ASSERT_THAT(resultVertexes, testing::Pointwise(VertexEqual(), test_case.plineVertexes));
+  ASSERT_THAT(resultVertexes, t::Pointwise(VertexEqual(), test_case.plineVertexes));
   cavc_pline_list_delete(remaining);
   cavc_pline_list_delete(subtracted);
 
@@ -463,7 +739,7 @@ TEST_P(cavc_plineFunctionTests, cavc_combine_plines) {
   resultVertexes.resize(cavc_pline_vertex_count(combineResult));
   cavc_pline_vertex_data(combineResult, &resultVertexes[0]);
   ASSERT_EQ(resultVertexes.size(), test_case.plineVertexes.size());
-  ASSERT_THAT(resultVertexes, testing::Pointwise(VertexEqual(), test_case.plineVertexes));
+  ASSERT_THAT(resultVertexes, t::Pointwise(VertexEqual(), test_case.plineVertexes));
   cavc_pline_list_delete(remaining);
   cavc_pline_list_delete(subtracted);
 
@@ -476,6 +752,6 @@ TEST_P(cavc_plineFunctionTests, cavc_combine_plines) {
 }
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+  t::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

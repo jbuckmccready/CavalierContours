@@ -142,16 +142,17 @@ CAVC_API void cavc_combine_plines(cavc_pline const *pline_a, cavc_pline const *p
                                   int combine_mode, cavc_pline_list **remaining,
                                   cavc_pline_list **subtracted);
 
-// Returns the path length of the cavc_pline given.
+// Returns the path length of the cavc_pline given. If pline vertex count is less than 2 then 0 is
+// returned.
 CAVC_API cavc_real cavc_get_path_length(cavc_pline const *pline);
 
-// Returns the signed area of the cavc_pline given. If pline is open and end vertex pos != start
-// vertex pos then 0 is returned. If pline goes clockwise then a negative signed area is returned,
-// otherwise a positive signed area is returned.
+// Returns the signed area of the cavc_pline given. If pline is open or vertex count is less than 2
+// then 0 is returned. If pline goes clockwise then a negative signed area is returned, otherwise a
+// positive signed area is returned.
 CAVC_API cavc_real cavc_get_area(cavc_pline const *pline);
 
-// Compute the winding number of the 2d point relative to the pline. If pline is open and end vertex
-// pos != start vertex pos then 0 is returned. For more on winding number see:
+// Compute the winding number of the 2d point relative to the pline. If pline is open or vertex
+// count is less than 2 then 0 is returned. For more on winding number see:
 // https://en.wikipedia.org/wiki/Winding_number
 CAVC_API int cavc_get_winding_number(cavc_pline const *pline, cavc_point point);
 
