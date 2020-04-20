@@ -4,7 +4,9 @@
 #include "gtest/gtest.h"
 #include <vector>
 
-class cavc_plineTests : public ::testing::Test {
+namespace t = testing;
+
+class cavc_plineTests : public t::Test {
 protected:
   void SetUp() override;
 
@@ -44,7 +46,7 @@ TEST_F(cavc_plineTests, cavc_pline_new) {
   // test vertex_data
   std::vector<cavc_vertex> read_vertexes(pline1Count);
   cavc_pline_vertex_data(pline1, &read_vertexes[0]);
-  ASSERT_THAT(pline1Vertexes, testing::Pointwise(VertexEqual(), read_vertexes));
+  ASSERT_THAT(pline1Vertexes, t::Pointwise(VertexEqual(), read_vertexes));
 
   // test on empty pline
   // test capacity
@@ -60,7 +62,7 @@ TEST_F(cavc_plineTests, cavc_pline_new) {
   // test vertex_data
   cavc_pline_vertex_data(pline2, &read_vertexes[0]);
   // nothing should have been written to the buffer
-  ASSERT_THAT(read_vertexes, testing::Pointwise(VertexEqual(), pline1Vertexes));
+  ASSERT_THAT(read_vertexes, t::Pointwise(VertexEqual(), pline1Vertexes));
 }
 
 TEST_F(cavc_plineTests, cavc_pline_set_capacity) {
@@ -78,7 +80,7 @@ TEST_F(cavc_plineTests, cavc_pline_set_vertex_data) {
 
   std::vector<cavc_vertex> readVertexes(initialPline1Size());
   cavc_pline_vertex_data(pline2, &readVertexes[0]);
-  ASSERT_THAT(readVertexes, testing::Pointwise(VertexEqual(), pline1Vertexes));
+  ASSERT_THAT(readVertexes, t::Pointwise(VertexEqual(), pline1Vertexes));
 }
 
 TEST_F(cavc_plineTests, cavc_pline_add_vertex) {
@@ -89,14 +91,14 @@ TEST_F(cavc_plineTests, cavc_pline_add_vertex) {
   std::vector<cavc_vertex> readVertexes(initialPline1Size() + 1);
   cavc_pline_vertex_data(pline1, &readVertexes[0]);
   pline1Vertexes.push_back(v);
-  ASSERT_THAT(readVertexes, testing::Pointwise(VertexEqual(), pline1Vertexes));
+  ASSERT_THAT(readVertexes, t::Pointwise(VertexEqual(), pline1Vertexes));
 
   cavc_pline_add_vertex(pline2, v);
   ASSERT_EQ(cavc_pline_vertex_count(pline2), 1);
 
   readVertexes.resize(1);
   cavc_pline_vertex_data(pline2, &readVertexes[0]);
-  ASSERT_THAT(readVertexes, testing::Pointwise(VertexEqual(), {v}));
+  ASSERT_THAT(readVertexes, t::Pointwise(VertexEqual(), {v}));
 }
 
 TEST_F(cavc_plineTests, cavc_pline_remove_range) {
@@ -107,7 +109,7 @@ TEST_F(cavc_plineTests, cavc_pline_remove_range) {
   std::vector<cavc_vertex> readVertexes(initialPline1Size() - 1);
   cavc_pline_vertex_data(pline1, &readVertexes[0]);
   pline1Vertexes.erase(pline1Vertexes.begin());
-  ASSERT_THAT(readVertexes, testing::Pointwise(VertexEqual(), pline1Vertexes));
+  ASSERT_THAT(readVertexes, t::Pointwise(VertexEqual(), pline1Vertexes));
 
   // remove 2nd and 3rd vertex
   cavc_pline_remove_range(pline1, 1, 2);
@@ -115,7 +117,7 @@ TEST_F(cavc_plineTests, cavc_pline_remove_range) {
   readVertexes.resize(1);
   cavc_pline_vertex_data(pline1, &readVertexes[0]);
   pline1Vertexes.erase(pline1Vertexes.begin() + 1, pline1Vertexes.begin() + 3);
-  ASSERT_THAT(readVertexes, testing::Pointwise(VertexEqual(), pline1Vertexes));
+  ASSERT_THAT(readVertexes, t::Pointwise(VertexEqual(), pline1Vertexes));
 
   // remove last vertex
   cavc_pline_remove_range(pline1, 0, 1);
@@ -126,7 +128,7 @@ TEST_F(cavc_plineTests, cavc_pline_remove_range) {
   auto copy = readVertexes;
   cavc_pline_vertex_data(pline1, &readVertexes[0]);
   // nothing should have been written to the buffer
-  ASSERT_THAT(readVertexes, testing::Pointwise(VertexEqual(), copy));
+  ASSERT_THAT(readVertexes, t::Pointwise(VertexEqual(), copy));
 }
 
 TEST_F(cavc_plineTests, cavc_pline_clear) {
@@ -138,6 +140,6 @@ TEST_F(cavc_plineTests, cavc_pline_clear) {
 }
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+  t::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
