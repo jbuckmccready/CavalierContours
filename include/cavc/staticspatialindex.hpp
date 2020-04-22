@@ -20,21 +20,19 @@ public:
     std::size_t n = numItems;
     std::size_t numNodes = numItems;
 
-    std::size_t levelBoundsSize = computeLevelBoundsSize(numItems);
-    m_levelBounds.reserve(levelBoundsSize);
-
-    n = numItems;
-    m_levelBounds.push_back(n * 4);
-
+    m_numLevels = computeNumLevels(numItems);
+    m_levelBounds = std::unique_ptr<std::size_t[]>(new std::size_t[m_numLevels]);
+    m_levelBounds[0] = n * 4;
     // now populate level bounds and numNodes
+    std::size_t i = 1;
     do {
       n = static_cast<std::size_t>(std::ceil(static_cast<float>(n) / NodeSize));
       numNodes += n;
-      m_levelBounds.push_back(numNodes * 4);
+      m_levelBounds[i] = numNodes * 4;
+      i += 1;
     } while (n != 1);
 
     m_numNodes = numNodes;
-    // using std::unique_ptr arrays for unitialized memory optimization
     m_boxes = std::unique_ptr<Real[]>(new Real[numNodes * 4]);
     m_indices = std::unique_ptr<std::size_t[]>(new std::size_t[numNodes]);
     m_pos = 0;
@@ -113,7 +111,7 @@ public:
 
     // generate nodes at each tree level, bottom-up
     pos = 0;
-    for (std::size_t i = 0; i < m_levelBounds.size() - 1; i++) {
+    for (std::size_t i = 0; i < m_numLevels - 1; i++) {
       auto end = m_levelBounds[i];
 
       // generate a parent node for each block of consecutive <nodeSize> nodes
@@ -155,7 +153,7 @@ public:
   // Visiting stops early if false is returned.
   template <typename F> void visitBoundingBoxes(F &&visitor) const {
     std::size_t nodeIndex = 4 * m_numNodes - 4;
-    std::size_t level = m_levelBounds.size() - 1;
+    std::size_t level = m_numLevels - 1;
 
     std::vector<std::size_t> stack;
     stack.reserve(16);
@@ -237,7 +235,7 @@ public:
     CAVC_ASSERT(m_pos == 4 * m_numNodes, "data not yet indexed - call Finish() before querying");
 
     auto nodeIndex = 4 * m_numNodes - 4;
-    auto level = m_levelBounds.size() - 1;
+    auto level = m_numLevels - 1;
 
     stack.clear();
 
@@ -341,13 +339,15 @@ private:
   Real m_maxX;
   Real m_maxY;
   std::size_t m_numItems;
-  std::vector<std::size_t> m_levelBounds;
+  std::size_t m_numLevels;
+  // using std::unique_ptr arrays for unitialized memory optimization
+  std::unique_ptr<std::size_t[]> m_levelBounds;
   std::size_t m_numNodes;
   std::unique_ptr<Real[]> m_boxes;
   std::unique_ptr<std::size_t[]> m_indices;
   std::size_t m_pos;
 
-  static std::size_t computeLevelBoundsSize(std::size_t numItems) {
+  static std::size_t computeNumLevels(std::size_t numItems) {
     std::size_t n = numItems;
     std::size_t levelBoundsSize = 1;
     do {
