@@ -1,13 +1,12 @@
 #ifndef CAVC_STATICSPATIALINDEX_HPP
 #define CAVC_STATICSPATIALINDEX_HPP
-#include <array>
+#include "internal/common.hpp"
 #include <cassert>
 #include <cmath>
 #include <limits>
 #include <memory>
 #include <stack>
 #include <vector>
-#include "internal/common.hpp"
 
 namespace cavc {
 template <typename Real, std::size_t NodeSize = 16> class StaticSpatialIndex {
@@ -21,13 +20,7 @@ public:
     std::size_t n = numItems;
     std::size_t numNodes = numItems;
 
-    // loop through initially to determine size for reserving memory
-    std::size_t levelBoundsSize = 1;
-    do {
-      n = static_cast<std::size_t>(std::ceil(static_cast<float>(n) / NodeSize));
-      levelBoundsSize += 1;
-    } while (n != 1);
-
+    std::size_t levelBoundsSize = computeLevelBoundsSize(numItems);
     m_levelBounds.reserve(levelBoundsSize);
 
     n = numItems;
@@ -41,6 +34,7 @@ public:
     } while (n != 1);
 
     m_numNodes = numNodes;
+    // using std::unique_ptr arrays for unitialized memory optimization
     m_boxes = std::unique_ptr<Real[]>(new Real[numNodes * 4]);
     m_indices = std::unique_ptr<std::size_t[]>(new std::size_t[numNodes]);
     m_pos = 0;
@@ -353,13 +347,15 @@ private:
   std::unique_ptr<std::size_t[]> m_indices;
   std::size_t m_pos;
 
-  static void insertionSort(std::uint32_t *values, Real *boxes, std::size_t *indices,
-                            std::size_t left, std::size_t right) {
-    for (std::size_t i = left; i < right; ++i) {
-      for (std::size_t j = i; j > left && values[j - 1] > values[j]; j--) {
-        swap(values, boxes, indices, j, j - 1);
-      }
-    }
+  static std::size_t computeLevelBoundsSize(std::size_t numItems) {
+    std::size_t n = numItems;
+    std::size_t levelBoundsSize = 1;
+    do {
+      n = static_cast<std::size_t>(std::ceil(static_cast<float>(n) / NodeSize));
+      levelBoundsSize += 1;
+    } while (n != 1);
+
+    return levelBoundsSize;
   }
 
   // quicksort that partially sorts the bounding box data alongside the Hilbert values
@@ -369,12 +365,6 @@ private:
 
     // check against NodeSize (only need to sort down to NodeSize buckets)
     if (left / NodeSize >= right / NodeSize) {
-      return;
-    }
-
-    if (right - left < 8) {
-      // insertion sort is faster at this point
-      insertionSort(values, boxes, indices, left, right);
       return;
     }
 
