@@ -6,45 +6,6 @@
 
 namespace t = testing;
 
-// type to hold summary properties of a polyline for test comparing, acts as a sort of geometric
-// hash of the polyline, it is very unlikely that two polylines have the same PolylineProperties
-// without being the same polyline, especially accidentally via generation in an algorithm
-struct PolylineProperties {
-  std::size_t vertexCount;
-  cavc_real area;
-  cavc_real pathLength;
-  cavc_real minX;
-  cavc_real minY;
-  cavc_real maxX;
-  cavc_real maxY;
-
-  PolylineProperties(std::size_t vertexCount, cavc_real area, cavc_real pathLength, cavc_real minX,
-                     cavc_real minY, cavc_real maxX, cavc_real maxY)
-      : vertexCount(vertexCount), area(area), pathLength(pathLength), minX(minX), minY(minY),
-        maxX(maxX), maxY(maxY) {}
-
-  PolylineProperties(cavc_pline *pline) {
-    vertexCount = cavc_pline_vertex_count(pline);
-    area = cavc_get_area(pline);
-    pathLength = cavc_get_path_length(pline);
-    cavc_get_extents(pline, &minX, &minY, &maxX, &maxY);
-  }
-};
-
-// fuzzy equality operator== for testing
-bool operator==(PolylineProperties const &left, PolylineProperties const &right) {
-  return left.vertexCount == right.vertexCount && fuzzyEqual(left.area, right.area) &&
-         fuzzyEqual(left.pathLength, right.pathLength) && fuzzyEqual(left.minX, right.minX) &&
-         fuzzyEqual(left.minY, right.minY) && fuzzyEqual(left.maxX, right.maxX) &&
-         fuzzyEqual(left.maxY, right.maxY);
-}
-std::ostream &operator<<(std::ostream &os, PolylineProperties const &p) {
-  os << "{ vertexCount: " << p.vertexCount << ", area: " << p.area
-     << ", pathLength: " << p.pathLength << ", minX: " << p.minX << ", minY: " << p.minY
-     << ", maxX: " << p.maxX << ", maxY: " << p.maxY << " }";
-  return os;
-}
-
 struct ParallelOffsetTestCase {
   std::string name;
   cavc_real offsetDelta;
@@ -55,8 +16,7 @@ struct ParallelOffsetTestCase {
                          std::vector<cavc_vertex> const &plineVertexes, bool isClosed,
                          std::vector<PolylineProperties> expectedResult)
       : name(std::move(name)), offsetDelta(delta),
-        pline(cavc_pline_new(&plineVertexes[0], static_cast<uint32_t>(plineVertexes.size()),
-                             isClosed)),
+        pline(plineFromVertexes(plineVertexes, isClosed)),
         expectedResult(std::move(expectedResult)) {}
 };
 std::ostream &operator<<(std::ostream &os, ParallelOffsetTestCase const &c) {
@@ -241,7 +201,7 @@ TEST_P(cavc_parallel_offsetTests, reversed_parallel_offset_test) {
     pp.area = -pp.area;
   }
 
-  cavc_pline_list *results;
+  cavc_pline_list *results = nullptr;
   cavc_parallel_offet(revPline, delta, &results, 0);
   ASSERT_EQ(cavc_pline_list_count(results), expectedResult.size());
 
@@ -256,6 +216,22 @@ TEST_P(cavc_parallel_offsetTests, reversed_parallel_offset_test) {
   ASSERT_THAT(resultsProperties, t::UnorderedPointwise(t::Eq(), expectedResult));
 
   cavc_pline_delete(revPline);
+  cavc_pline_list_delete(results);
+}
+
+TEST(cavc_parallel_offsetTests, parallel_offset_does_not_modify_input_test) {
+  ParallelOffsetTestCase const &testCase = simpleCases[0];
+  std::vector<cavc_vertex> vertexesBefore(cavc_pline_vertex_count(testCase.pline));
+  cavc_pline_vertex_data(testCase.pline, &vertexesBefore[0]);
+
+  cavc_pline_list *results = nullptr;
+  cavc_parallel_offet(testCase.pline, testCase.offsetDelta, &results, 0);
+
+  std::vector<cavc_vertex> vertexesAfter(cavc_pline_vertex_count(testCase.pline));
+  cavc_pline_vertex_data(testCase.pline, &vertexesAfter[0]);
+
+  ASSERT_THAT(vertexesAfter, t::Pointwise(VertexEqual(), vertexesAfter));
+
   cavc_pline_list_delete(results);
 }
 
