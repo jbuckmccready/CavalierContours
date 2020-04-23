@@ -590,7 +590,7 @@ Polyline<Real> createRawOffsetPline(Polyline<Real> const &pline, Real offset) {
 
   // if due to joining of segments we are left with only 1 vertex then return no raw offset (empty
   // polyline)
-  if (result.size() < 2) {
+  if (result.size() == 1) {
     result.vertexes().clear();
   }
 
