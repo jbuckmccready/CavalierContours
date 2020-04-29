@@ -62,6 +62,15 @@ std::vector<ParallelOffsetTestCase> createSpecificCases() {
                        std::move(expectedResult));
   }
 
+  {
+    // collapsed rectangle
+    std::vector<cavc_vertex> vertexes = {{0, 0, 0}, {120, 0, 0}, {120, 40, 0}, {0, 40, 0}};
+    // expect no results
+    std::vector<PolylineProperties> expectedResult;
+    cases.emplace_back("collapsed_rectangle", 30.0, std::move(vertexes), true,
+                       std::move(expectedResult));
+  }
+
   return cases;
 }
 

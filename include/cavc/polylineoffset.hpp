@@ -624,7 +624,13 @@ std::vector<OpenPolylineSlice<Real>> slicesFromRawOffset(Polyline<Real> const &o
   std::vector<PlineIntersect<Real>> selfIntersects;
   allSelfIntersects(rawOffsetPline, selfIntersects, rawOffsetPlineSpatialIndex);
 
+  std::vector<std::size_t> queryStack;
+  queryStack.reserve(8);
   if (selfIntersects.size() == 0) {
+    if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, rawOffsetPline[0].pos(),
+                             queryStack)) {
+      return result;
+    }
     // copy and convert raw offset into open polyline
     result.emplace_back(std::numeric_limits<std::size_t>::max(), rawOffsetPline);
     result.back().pline.isClosed() = false;
@@ -650,8 +656,6 @@ std::vector<OpenPolylineSlice<Real>> slicesFromRawOffset(Polyline<Real> const &o
     std::sort(kvp.second.begin(), kvp.second.end(), cmp);
   }
 
-  std::vector<std::size_t> queryStack;
-  queryStack.reserve(8);
   auto intersectsOrigPline = [&](PlineVertex<Real> const &v1, PlineVertex<Real> const &v2) {
     AABB<Real> approxBB = createFastApproxBoundingBox(v1, v2);
     bool hasIntersect = false;
@@ -869,7 +873,13 @@ dualSliceAtIntersectsForOffset(Polyline<Real> const &originalPline,
     intersectsLookup[intr.sIndex1].push_back(intr.point2);
   }
 
+  std::vector<std::size_t> queryStack;
+  queryStack.reserve(8);
   if (intersectsLookup.size() == 0) {
+    if (!pointValidForOffset(originalPline, offset, origPlineSpatialIndex, rawOffsetPline[0].pos(),
+                             queryStack)) {
+      return result;
+    }
     // copy and convert raw offset into open polyline
     result.emplace_back(std::numeric_limits<std::size_t>::max(), rawOffsetPline);
     result.back().pline.isClosed() = false;
@@ -889,8 +899,6 @@ dualSliceAtIntersectsForOffset(Polyline<Real> const &originalPline,
     std::sort(kvp.second.begin(), kvp.second.end(), cmp);
   }
 
-  std::vector<std::size_t> queryStack;
-  queryStack.reserve(8);
   auto intersectsOrigPline = [&](PlineVertex<Real> const &v1, PlineVertex<Real> const &v2) {
     AABB<Real> approxBB = createFastApproxBoundingBox(v1, v2);
     bool intersects = false;
