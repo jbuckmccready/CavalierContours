@@ -38,7 +38,7 @@ C++14 header only library for processing 2D polylines containing both straight l
 
 # Quick Polyline Offset Example
 ```c++
-#include "cavc/polylineoffset.h"
+#include "cavc/polylineoffset.hpp"
 
 // input polyline
 cavc::Polyline<double> input;
@@ -195,7 +195,7 @@ The above benchmarks compare CavalierContours taking in the original input (arcs
 
 # Implementation Notes and Variations
 ## Float Comparing and Thresholding
-When comparing two float values for equality, `a` and `b`, this implementation uses a simple fuzzy comparing method of `abs(a - b) < epsilon`, where `epsilon` is a very small number, e.g. 1e-8 or 1e-5 depending on the context. These numbers were picked through anecdotal use case trial/error where input values are typically between 0.1 and 1000.0. If finer comparisons are required, or if the input values get quite large or small then numerical stability issues may arise and the means of fuzzy comparing will need to be adjusted. See [mathutils.h](include/cavc/mathutils.h) for c++ implementation.
+When comparing two float values for equality, `a` and `b`, this implementation uses a simple fuzzy comparing method of `abs(a - b) < epsilon`, where `epsilon` is a very small number, e.g. 1e-8 or 1e-5 depending on the context. These numbers were picked through anecdotal use case trial/error where input values are typically between 0.1 and 1000.0. If finer comparisons are required, or if the input values get quite large or small then numerical stability issues may arise and the means of fuzzy comparing will need to be adjusted. See [mathutils.hpp](include/cavc/mathutils.hpp) for c++ implementation.
 
 ## Joining Raw Offset Segments
 When joining raw offset segments together the current implementation always uses an arc to connect adjacent segments if they do not intersect, the arc maintains a constant distance from the original input polyline. Alternatively these joins could be done by extending the original line/arc segments until they intersect or by some other means entirely. Note that any other type of join will result in the offset polyline not being at a constant offset distance from the original input.
@@ -223,7 +223,7 @@ The goal of this project is to provide a simple, direct, and pragmatic algorithm
 # Algorithm Complexity and 2D Spatial Indexing
 The algorithm requires finding self-intersects, testing the distance between points and the original polyline, testing for intersects between new segments and the original polyline, and stitching open polylines together end to end. The naïve approach to such steps typically results in O(n<sup>2</sup>) algorithmic complexity where each segment must be tested against every other segment and each point must be tested against every segment.
 
-The approach used by this library is to use a packed Hilbert R-Tree [[3]](#references). See [staticspatialindex.h](include/cavc/staticspatialindex.h) for c++ implementation. See [[4]](#references) and [[5]](#references) for more implementation references. This results in an algorithm complexity of O(n log n) for typical inputs, with worse case O(n<sup>2</sup>) for pathological inputs.
+The approach used by this library is to use a packed Hilbert R-Tree [[3]](#references). See [staticspatialindex.hpp](include/cavc/staticspatialindex.hpp) for c++ implementation. See [[4]](#references) and [[5]](#references) for more implementation references. This results in an algorithm complexity of O(n log n) for typical inputs, with worse case O(n<sup>2</sup>) for pathological inputs.
 
 ## Packed Hilbert R-Tree
 Here is an image of a closed polyline approximating a circle using 100 line segments (blue lines and red vertexes) with spatial index bounding boxes made visible (magenta, orange, and light green boxes). The root of the R-Tree is the light green box, its children are the orange boxes, and its grand children are the magenta boxes.
