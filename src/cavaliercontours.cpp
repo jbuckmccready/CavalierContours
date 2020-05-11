@@ -196,6 +196,7 @@ void cavc_combine_plines(cavc_pline const *pline_a, cavc_pline const *pline_b, i
                          cavc_pline_list **remaining, cavc_pline_list **subtracted) {
   CAVC_ASSERT(pline_a, "null pline_a not allowed");
   CAVC_ASSERT(pline_b, "null pline_b not allowed");
+  CAVC_ASSERT(combine_mode >= 0 && combine_mode <= 3, "combine_mode must be 0, 1, 2, or 3");
   CAVC_BEGIN_TRY_CATCH
   cavc::PlineCombineMode mode;
   switch (combine_mode) {
@@ -212,7 +213,8 @@ void cavc_combine_plines(cavc_pline const *pline_a, cavc_pline const *pline_b, i
     mode = cavc::PlineCombineMode::XOR;
     break;
   default:
-    return;
+    mode = cavc::PlineCombineMode::Union;
+    break;
   }
   auto results = cavc::combinePolylines(pline_a->data, pline_b->data, mode);
 

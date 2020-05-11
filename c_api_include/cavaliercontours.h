@@ -108,11 +108,14 @@ CAVC_API void cavc_pline_set_is_closed(cavc_pline *pline, int is_closed);
 
 // Delete/free a cavc_pline_list, this will also delete all elements in the list.
 CAVC_API void cavc_pline_list_delete(cavc_pline_list *pline_list);
+
 // Get the element count of the cavc_pline_list.
 CAVC_API uint32_t cavc_pline_list_count(cavc_pline_list const *pline_list);
+
 // Get a cavc_pline from the cavc_pline_list. No bounds checking is performed (ensure index <
 // cavc_pline_list count). NOTE: The cavc_pline is still owned by the list!
 CAVC_API cavc_pline *cavc_pline_list_get(cavc_pline_list const *pline_list, uint32_t index);
+
 // Release a cavc_pline from the cavc_pline_list's ownership, returning the cavc_pline that was
 // released and removing it from the list. NOTE: cavc_pline_delete must now be called on the
 // released cavc_pline!

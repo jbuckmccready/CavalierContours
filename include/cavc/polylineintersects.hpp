@@ -294,7 +294,7 @@ void globalSelfIntersects(Polyline<Real> const &pline, std::vector<PlineIntersec
         return true;
       }
       // skip reversed segment order (would end up comparing the same segments)
-      if (visitedSegmentPairs.find(std::make_pair(hitIndexStart, i)) != visitedSegmentPairs.end()) {
+      if (visitedSegmentPairs.find({hitIndexStart, i}) != visitedSegmentPairs.end()) {
         return true;
       }
 
@@ -415,11 +415,11 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
         coincidentIntrs.emplace_back(i1, i2, intrResult.point1, intrResult.point2);
         if (fuzzyEqual(p1v1.pos(), intrResult.point1) ||
             fuzzyEqual(p1v1.pos(), intrResult.point2)) {
-          possibleDuplicates.insert(std::make_pair(utils::prevWrappingIndex(i1, pline1), i2));
+          possibleDuplicates.insert({utils::prevWrappingIndex(i1, pline1), i2});
         }
         if (fuzzyEqual(p2v1.pos(), intrResult.point1) ||
             fuzzyEqual(p2v1.pos(), intrResult.point2)) {
-          possibleDuplicates.insert(std::make_pair(i1, utils::prevWrappingIndex(i2, pline2)));
+          possibleDuplicates.insert({i1, utils::prevWrappingIndex(i2, pline2)});
         }
         break;
       }
@@ -434,8 +434,7 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
   // remove duplicate points caused by the coincident intersect definition
   intrs.erase(std::remove_if(intrs.begin(), intrs.end(),
                              [&](auto const &intr) {
-                               auto found = possibleDuplicates.find(
-                                   std::make_pair(intr.sIndex1, intr.sIndex2));
+                               auto found = possibleDuplicates.find({intr.sIndex1, intr.sIndex2});
                                if (found == possibleDuplicates.end()) {
                                  return false;
                                }
