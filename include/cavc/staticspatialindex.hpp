@@ -1,7 +1,7 @@
 #ifndef CAVC_STATICSPATIALINDEX_HPP
 #define CAVC_STATICSPATIALINDEX_HPP
 #include "internal/common.hpp"
-#include <cassert>
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <memory>

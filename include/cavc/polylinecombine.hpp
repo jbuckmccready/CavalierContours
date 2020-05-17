@@ -253,6 +253,10 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
   queryStack.reserve(8);
 
   auto closePline = [&](Polyline<Real> &pline) {
+    if (pline.size() < 3) {
+      // skip slice in the case of just two vertexes ontop of each other
+      return;
+    }
     pline.vertexes().pop_back();
     pline.isClosed() = true;
     result.emplace_back();
