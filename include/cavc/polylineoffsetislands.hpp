@@ -106,8 +106,8 @@ void ParallelOffsetIslands<Real>::createOffsetLoops(const OffsetLoopSet<Real> &i
   // create counter clockwise offset loops
   m_ccwOffsetLoops.clear();
   std::size_t parentIndex = 0;
-  for (auto const &c : input.ccwLoops) {
-    auto offsets = parallelOffset(c.polyline, absDelta);
+  for (auto const &loop : input.ccwLoops) {
+    auto offsets = parallelOffset(loop.polyline, absDelta);
     for (auto &offset : offsets) {
       // must check if orientation inverted (due to collapse of very narrow or small input)
       if (getArea(offset) < Real(0)) {
@@ -121,8 +121,8 @@ void ParallelOffsetIslands<Real>::createOffsetLoops(const OffsetLoopSet<Real> &i
 
   // create clockwise offset loops (note counter clockwise loops may result from outward offset)
   m_cwOffsetLoops.clear();
-  for (auto const &c : input.cwLoops) {
-    auto offsets = parallelOffset(c.polyline, absDelta);
+  for (auto const &loop : input.cwLoops) {
+    auto offsets = parallelOffset(loop.polyline, absDelta);
     for (auto &offset : offsets) {
       auto index = createApproxSpatialIndex(offset);
       if (getArea(offset) < Real(0)) {
@@ -259,9 +259,6 @@ void ParallelOffsetIslands<Real>::createSlicesFromLoop(std::size_t loopIndex, Re
     std::sort(kvp.second.begin(), kvp.second.end(), cmp);
   }
 
-  auto pointOnSliceValid = [&](auto const &pt) {
-    return pointOnOffsetValid(parentIndex, pt, absDelta);
-  };
 
   for (auto const &kvp : m_loopDissectionPoints) {
     // start index for the slice we're about to build
@@ -292,7 +289,7 @@ void ParallelOffsetIslands<Real>::createSlicesFromLoop(std::size_t loopIndex, Re
         }
 
         auto sMidpoint = segMidpoint(split.updatedStart, split.splitVertex);
-        if (!pointOnSliceValid(sMidpoint)) {
+        if (!pointOnOffsetValid(parentIndex, sMidpoint, absDelta)) {
           // skip slice
           continue;
         }
@@ -350,7 +347,7 @@ void ParallelOffsetIslands<Real>::createSlicesFromLoop(std::size_t loopIndex, Re
     if (currSlice.pline.size() > 1) {
       auto sMidpoint =
           segMidpoint(currSlice.pline[currSlice.pline.size() - 2], currSlice.pline.lastVertex());
-      if (!pointOnSliceValid(sMidpoint)) {
+      if (!pointOnOffsetValid(parentIndex, sMidpoint, absDelta)) {
         // skip slice
         continue;
       }
