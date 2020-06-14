@@ -363,9 +363,10 @@ OffsetLoopSet<Real> ParallelOffsetIslands<Real>::compute(const OffsetLoopSet<Rea
   OffsetLoopSet<Real> result;
   Real absDelta = std::abs(offsetDelta);
   createOffsetLoops(input, absDelta);
-  if (m_ccwOffsetLoops.size() == 0) {
+  if (totalOffsetLoopsCount() == 0) {
     return result;
   }
+
   createOffsetLoopsIndex();
   createSlicePoints();
 
