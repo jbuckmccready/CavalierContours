@@ -432,11 +432,13 @@ IntrPlineSegsResult<Real> intrPlineSegs(PlineVertex<Real> const &v1, PlineVertex
       auto arc1End = arc1StartAndSweep.first + arc1StartAndSweep.second;
       auto arc2End = arc2StartAndSweep.first + arc2StartAndSweep.second;
 
-      if (utils::fuzzyEqual(arc1StartAndSweep.first, arc2End)) {
+      if (std::abs(utils::deltaAngle(arc1StartAndSweep.first, arc2End)) <
+          utils::realThreshold<Real>()) {
         // only end points touch at start of arc1
         result.intrType = PlineSegIntrType::OneIntersect;
         result.point1 = v1.pos();
-      } else if (utils::fuzzyEqual(arc2StartAndSweep.first, arc1End)) {
+      } else if (std::abs(utils::deltaAngle(arc2StartAndSweep.first, arc1End)) <
+                 utils::realThreshold<Real>()) {
         // only end points touch at start of arc2
         result.intrType = PlineSegIntrType::OneIntersect;
         result.point1 = u1.pos();
