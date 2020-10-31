@@ -59,6 +59,8 @@ input.isClosed() = true;
 // compute the resulting offset polylines, offset = 3
 std::vector<cavc::Polyline<double>> results = cavc::parallelOffset(input, 3.0);
 ```
+NOTE: If the offset results are wrong in some way you may need to adjust the scale of the numbers, e.g. scale the inputs up by 1000 (by multiplying all the X and Y components of the vertexes by 1000), perform the offset (with the offset value also scaled up by 1000), and then scale the output result back down by 1000. This is due the fixed bit representation of floating point numbers and the absolute float comparing and thresholding used by the algorithm.
+
 # Polyline Structure
 Polylines are defined by a sequence of vertexes and a bool indicating whether the polyline is closed or open. Each vertex has a 2D position (x and y) as well as a bulge value. Bulge is used to define arcs, where `bulge = tan(theta/4)`. `theta` is the arc sweep angle from the starting vertex position to the next vertex position. If the polyline is closed then the last vertex connects to the first vertex, otherwise it does not (and the last vertex bulge value is unused). See [[2]](#references) for more details regarding bulge calculations.
 
