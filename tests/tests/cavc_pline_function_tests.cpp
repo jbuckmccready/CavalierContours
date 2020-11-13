@@ -643,7 +643,7 @@ TEST_P(cavc_plineFunctionTests, cavc_get_closest_point) {
               t::Pointwise(t::DoubleNear(TEST_EPSILON()), testCase.closestPointDistanceResults));
 }
 
-TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
+TEST_P(cavc_plineFunctionTests, cavc_parallel_offset) {
   cavc_plineFunctionsTestCase const &testCase = GetParam();
   if (testCase.skipOffsetTest() && testCase.skipCollapsedOffsetTest()) {
     GTEST_SKIP();
@@ -652,7 +652,7 @@ TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
   if (!testCase.skipOffsetTest()) {
     std::vector<cavc_pline_list *> results(testCase.offsetTestDeltas.size());
     for (std::size_t i = 0; i < testCase.offsetTestDeltas.size(); ++i) {
-      cavc_parallel_offet(testCase.pline, testCase.offsetTestDeltas[i], &results[i], 0);
+      cavc_parallel_offset(testCase.pline, testCase.offsetTestDeltas[i], &results[i], 0);
     }
 
     // test there is only one resulting offset pline
@@ -685,7 +685,7 @@ TEST_P(cavc_plineFunctionTests, cavc_parallel_offet) {
   if (!testCase.skipCollapsedOffsetTest()) {
     std::vector<cavc_pline_list *> results(testCase.collapsedOffsetDeltas.size());
     for (std::size_t i = 0; i < testCase.collapsedOffsetDeltas.size(); ++i) {
-      cavc_parallel_offet(testCase.pline, testCase.collapsedOffsetDeltas[i], &results[i], 0);
+      cavc_parallel_offset(testCase.pline, testCase.collapsedOffsetDeltas[i], &results[i], 0);
     }
     ASSERT_THAT(results, t::Each(t::ResultOf(cavc_pline_list_count, t::Eq(0))));
     for (auto result : results) {

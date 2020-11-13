@@ -181,7 +181,7 @@ INSTANTIATE_TEST_SUITE_P(simple_cases, cavc_parallel_offsetTests, t::ValuesIn(si
 TEST_P(cavc_parallel_offsetTests, parallel_offset_test) {
   ParallelOffsetTestCase const &testCase = GetParam();
   cavc_pline_list *results;
-  cavc_parallel_offet(testCase.pline, testCase.offsetDelta, &results, 0);
+  cavc_parallel_offset(testCase.pline, testCase.offsetDelta, &results, 0);
   ASSERT_EQ(cavc_pline_list_count(results), testCase.expectedResult.size());
 
   std::vector<PolylineProperties> resultsProperties;
@@ -211,7 +211,7 @@ TEST_P(cavc_parallel_offsetTests, reversed_parallel_offset_test) {
   }
 
   cavc_pline_list *results = nullptr;
-  cavc_parallel_offet(revPline, delta, &results, 0);
+  cavc_parallel_offset(revPline, delta, &results, 0);
   ASSERT_EQ(cavc_pline_list_count(results), expectedResult.size());
 
   std::vector<PolylineProperties> resultsProperties;
@@ -234,7 +234,7 @@ TEST(cavc_parallel_offsetTests, parallel_offset_does_not_modify_input_test) {
   cavc_pline_vertex_data(testCase.pline, &vertexesBefore[0]);
 
   cavc_pline_list *results = nullptr;
-  cavc_parallel_offet(testCase.pline, testCase.offsetDelta, &results, 0);
+  cavc_parallel_offset(testCase.pline, testCase.offsetDelta, &results, 0);
 
   std::vector<cavc_vertex> vertexesAfter(cavc_pline_vertex_count(testCase.pline));
   cavc_pline_vertex_data(testCase.pline, &vertexesAfter[0]);

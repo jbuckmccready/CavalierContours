@@ -180,8 +180,8 @@ cavc_pline *cavc_pline_list_release(cavc_pline_list *pline_list, uint32_t index)
   CAVC_END_TRY_CATCH
 }
 
-void cavc_parallel_offet(cavc_pline const *pline, cavc_real delta, cavc_pline_list **output,
-                         int option_flags) {
+void cavc_parallel_offset(cavc_pline const *pline, cavc_real delta, cavc_pline_list **output,
+                          int option_flags) {
   CAVC_ASSERT(pline, "null pline not allowed");
   CAVC_ASSERT(output, "null output not allowed");
   CAVC_BEGIN_TRY_CATCH
