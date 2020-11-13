@@ -12,7 +12,8 @@ C++14 header only library for processing 2D polylines containing both straight l
 - [Table of Contents](#table-of-contents)
 - [Quick Code Example](#quick-code-example)
 - [Polyline Structure](#polyline-structure)
-- [Algorithm and Stepwise Example](#algorithm-and-stepwise-example)
+- [Other Programming Languages](#other-programming-languages)
+- [Offset Algorithm and Stepwise Example](#offset-algorithm-and-stepwise-example)
   - [Original input polyline, *pline* in blue, vertexes in red](#original-input-polyline-pline-in-blue-vertexes-in-red)
   - [Raw offset segments generated in purple (Step 1)](#raw-offset-segments-generated-in-purple-step-1)
   - [Raw offset polyline created from raw offset segments, *pline1* (in green) (Step 2)](#raw-offset-polyline-created-from-raw-offset-segments-pline1-in-green-step-2)
@@ -36,7 +37,7 @@ C++14 header only library for processing 2D polylines containing both straight l
 - [References](#references)
 
 
-# Quick Polyline Offset Example
+# Quick Code Example
 ```c++
 #include "cavc/polylineoffset.hpp"
 
@@ -63,6 +64,11 @@ NOTE: If the offset results are wrong in some way you may need to adjust the sca
 
 # Polyline Structure
 Polylines are defined by a sequence of vertexes and a bool indicating whether the polyline is closed or open. Each vertex has a 2D position (x and y) as well as a bulge value. Bulge is used to define arcs, where `bulge = tan(theta/4)`. `theta` is the arc sweep angle from the starting vertex position to the next vertex position. If the polyline is closed then the last vertex connects to the first vertex, otherwise it does not (and the last vertex bulge value is unused). See [[2]](#references) for more details regarding bulge calculations.
+
+# Other Programming Languages
+CavalierContours is written in C++ and makes available a C API. Here are some wrappers in other languages:
+
+[Python](https://github.com/proto3/cavaliercontours-python) (wraps the C API)
 
 # Offset Algorithm and Stepwise Example
 1. Generate raw offset segments from the input polyline, *pline*.
@@ -212,6 +218,8 @@ Pull requests, feature requests/ideas, issues, and bug reports are welcome. Plea
 
 # API Stability
 There is not an official release yet - all functions and structures are subject to change. This repository for now serves as an implementation reference that is easy to understand and possibly transcribe to other programming languages. The code can be used as is, but there is no guarantee that future development will maintain the same functions and structures. Ideas/pull requests for what a stable API interface should look like are welcome.
+
+Tentatively the C API is stable, see header file [here](c_api_include/cavaliercontours.h), but has not yet been solidified in a 1.0 release.
 
 # Project Motivation and Goal
 I set out to generate tool compensated milling tool paths for profile cuts, in the process I found many papers on offsetting curves for CAD/CAM uses [[1][9][10][16]](#references), but there is often no reference implementation. Most algorithms described are dense and difficult to reproduce. Issues such as numeric stability, how to handle coincident segments, process collapsing arcs, etc. are often not mentioned, and the algorithmic description detail is inconsistent. It may be very clear how to perform some of the steps, but other steps are quickly glossed over, and it becomes unclear how to go about implementing. All of these issues would not be much of a problem if an open source reference implementation was supplied, but for all the papers I have read not a single implementation was given.
