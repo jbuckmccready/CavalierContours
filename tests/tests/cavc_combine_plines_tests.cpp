@@ -87,11 +87,118 @@ static std::vector<CombinePlinesTestCase> createSimpleCases() {
   return cases;
 }
 
+static std::vector<CombinePlinesTestCase> createCoincidentCases() {
+  std::vector<CombinePlinesTestCase> cases;
+
+  {
+    // combining two polylines which just overlap on a single edge, both outside each other
+    std::vector<cavc_vertex> plineAVertexes = {
+        {-0.105, 0.235, 0}, {-0.095, 0.235, 0}, {-0.095, 0, -1}, {-0.105, 0, 0}};
+    std::vector<cavc_vertex> plineBVertexes = {
+        {-0.25, 0.235, -0.414214}, {-0.255, 0.24, 0}, {-0.255, 0.29, -0.414214}, {-0.25, 0.295, 0},
+        {0.25, 0.295, -0.414214},  {0.255, 0.29, 0},  {0.255, 0.24, -0.414214},  {0.25, 0.235, 0}};
+    cavc_pline *plineA = plineFromVertexes(plineAVertexes, true);
+    cavc_pline *plineB = plineFromVertexes(plineBVertexes, true);
+    // Union
+    std::vector<PolylineProperties> expectedRemaining;
+    expectedRemaining.emplace_back(12, -0.032967809756574, 1.6071238962168, -0.255, -0.005, 0.255,
+                                   0.295);
+    std::vector<PolylineProperties> expectedSubtracted;
+    cases.emplace_back("coincident_case1_union", 0, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+
+    // Exclude
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
+    expectedRemaining.emplace_back(4, -0.0023892699081699, 0.49570796326795, -0.105, -0.005, -0.095,
+                                   0.235);
+    cases.emplace_back("coincident_case1_excludeAFromB", 1, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
+    expectedRemaining.emplace_back(10, -0.030578539848405, 1.1314159329489, -0.255, 0.235, 0.255,
+                                   0.295);
+    cases.emplace_back("coincident_case1_excludeBFromA", 1, plineB, plineA, expectedRemaining,
+                       expectedSubtracted);
+
+    // Intersect
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
+    cases.emplace_back("coincident_case1_intersect", 2, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+
+    // XOR
+    expectedRemaining.clear();
+    expectedRemaining.emplace_back(4, -0.0023892699081699, 0.49570796326795, -0.105, -0.005, -0.095,
+                                   0.235);
+    expectedRemaining.emplace_back(10, 0.030578539848405, 1.1314159329489, -0.255, 0.235, 0.255,
+                                   0.295);
+    expectedSubtracted.clear();
+    cases.emplace_back("coincident_case1_xor", 3, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+  }
+
+  {
+    // combining two polylines which have many coincident slices and regular intersects, no arcs
+    std::vector<cavc_vertex> plineAVertexes = {{0, 0, 0}, {0, 20, 0}, {20, 20, 0}, {20, 0, 0}};
+    std::vector<cavc_vertex> plineBVertexes = {
+        {-2, 10, 0}, {-2, 20, 0}, {2, 20, 0}, {2, 25, 0},  {4, 25, 0},  {4, 20, 0}, {6, 20, 0},
+        {6, 15, 0},  {8, 15, 0},  {8, 20, 0}, {10, 40, 0}, {30, 40, 0}, {30, 20, 0}};
+    cavc_pline *plineA = plineFromVertexes(plineAVertexes, true);
+    cavc_pline *plineB = plineFromVertexes(plineBVertexes, true);
+    // Union
+    std::vector<PolylineProperties> expectedRemaining;
+    expectedRemaining.emplace_back(16, -865, 150.17204220292, -2, 0, 30, 40);
+    std::vector<PolylineProperties> expectedSubtracted;
+    cases.emplace_back("coincident_case2_union", 0, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+
+    // Exclude
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
+    expectedRemaining.emplace_back(4, -275, 68.4538182678, 0, 0, 20, 16.875);
+    expectedRemaining.emplace_back(4, -10, 14, 6, 15, 8, 20);
+    cases.emplace_back("coincident_case2_excludeAFromB", 1, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
+    expectedRemaining.emplace_back(4, -19.375, 23.47038182678, -2, 10, 0, 20);
+    expectedRemaining.emplace_back(6, -435.625, 85.701660376142, 8, 16.875, 30, 40);
+    expectedRemaining.emplace_back(4, -10, 14, 2, 20, 4, 25);
+    cases.emplace_back("coincident_case2_excludeBFromA", 1, plineB, plineA, expectedRemaining,
+                       expectedSubtracted);
+
+    // Intersect
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
+    expectedRemaining.emplace_back(10, -115, 63.4538182678, 0, 10.625, 20, 20);
+    cases.emplace_back("coincident_case2_intersect", 2, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+
+    // XOR
+    expectedRemaining.clear();
+    expectedRemaining.emplace_back(4, -19.375, 23.47038182678, -2, 10, 0, 20);
+    expectedRemaining.emplace_back(6, -435.625, 85.701660376142, 8, 16.875, 30, 40);
+    expectedRemaining.emplace_back(4, -10, 14, 2, 20, 4, 25);
+    expectedRemaining.emplace_back(4, 275, 68.4538182678, 0, 0, 20, 16.875);
+    expectedRemaining.emplace_back(4, 10, 14, 6, 15, 8, 20);
+    expectedSubtracted.clear();
+    cases.emplace_back("coincident_case2_xor", 3, plineA, plineB, expectedRemaining,
+                       expectedSubtracted);
+  }
+
+  return cases;
+}
+
 static std::vector<CombinePlinesTestCase> simpleCases = createSimpleCases();
+static std::vector<CombinePlinesTestCase> coincidentCases = createCoincidentCases();
 
 class cavc_combine_plinesTests : public t::TestWithParam<CombinePlinesTestCase> {};
 
 INSTANTIATE_TEST_SUITE_P(simple_cases, cavc_combine_plinesTests, t::ValuesIn(simpleCases));
+INSTANTIATE_TEST_SUITE_P(coincident_cases, cavc_combine_plinesTests, t::ValuesIn(coincidentCases));
 
 TEST_P(cavc_combine_plinesTests, combine_plines_test) {
   CombinePlinesTestCase const &testCase = GetParam();
@@ -109,7 +216,8 @@ TEST_P(cavc_combine_plinesTests, combine_plines_test) {
     cavc_pline *pline = cavc_pline_list_get(remaining, i);
     remainingProperties.emplace_back(pline);
   }
-  ASSERT_THAT(remainingProperties, t::UnorderedPointwise(t::Eq(), testCase.expectedRemaining));
+  ASSERT_THAT(remainingProperties,
+              t::UnorderedPointwise(EqIgnoreSignOfArea(), testCase.expectedRemaining));
 
   std::vector<PolylineProperties> subtractedProperties;
   subtractedProperties.reserve(testCase.expectedSubtracted.size());
@@ -117,7 +225,8 @@ TEST_P(cavc_combine_plinesTests, combine_plines_test) {
     cavc_pline *pline = cavc_pline_list_get(subtracted, i);
     subtractedProperties.emplace_back(pline);
   }
-  ASSERT_THAT(subtractedProperties, t::UnorderedPointwise(t::Eq(), testCase.expectedSubtracted));
+  ASSERT_THAT(subtractedProperties,
+              t::UnorderedPointwise(EqIgnoreSignOfArea(), testCase.expectedSubtracted));
 
   cavc_pline_list_delete(remaining);
   cavc_pline_list_delete(subtracted);

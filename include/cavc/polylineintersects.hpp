@@ -30,9 +30,9 @@ template <typename Real> struct PlineCoincidentIntersect {
   std::size_t sIndex1;
   /// Index of the start vertex of the second segment
   std::size_t sIndex2;
-  /// One end point of the coincident path
+  /// One end point of the coincident slice
   Vector2<Real> point1;
-  /// Other end point of the coincident path
+  /// Other end point of the coincident slice
   Vector2<Real> point2;
   PlineCoincidentIntersect() = default;
   PlineCoincidentIntersect(std::size_t si1, std::size_t si2, Vector2<Real> const &point1,
@@ -50,6 +50,7 @@ template <typename Real> struct CoincidentSlicesResult {
   std::vector<Polyline<Real>> coincidentSlices;
   std::vector<PlineIntersect<Real>> sliceStartPoints;
   std::vector<PlineIntersect<Real>> sliceEndPoints;
+  std::vector<bool> coincidentIsOpposingDirection;
 };
 
 template <typename Real>
@@ -87,6 +88,7 @@ sortAndjoinCoincidentSlices(std::vector<PlineCoincidentIntersect<Real>> &coincid
   auto &sliceStartPoints = result.sliceStartPoints;
   auto &sliceEndPoints = result.sliceEndPoints;
   auto &coincidentSlices = result.coincidentSlices;
+  auto &coincidentIsOpposingDirection = result.coincidentIsOpposingDirection;
 
   Polyline<Real> currCoincidentSlice;
 
@@ -95,6 +97,14 @@ sortAndjoinCoincidentSlices(std::vector<PlineCoincidentIntersect<Real>> &coincid
     const auto &v1 = pline1[intr.sIndex1];
     const auto &v2 = pline1[utils::nextWrappingIndex(intr.sIndex1, pline1)];
     const auto &u1 = pline2[intr.sIndex2];
+    const auto &u2 = pline2[utils::nextWrappingIndex(intr.sIndex2, pline2)];
+    auto const &t1 = segTangentVector(v1, v2, v1.pos());
+    auto const &t2 = segTangentVector(u1, u2, u1.pos());
+    // tangent vectors are either going same direction or opposite direction, just test dot product
+    // sign to determine if going same direction
+    auto dotP = dot(t1, t2);
+    bool sameDirection = dotP > Real(0);
+    coincidentIsOpposingDirection.push_back(!sameDirection);
 
     auto split1 = splitAtPoint(v1, v2, intr.point1);
     currCoincidentSlice.addVertex(split1.splitVertex);
@@ -181,6 +191,7 @@ sortAndjoinCoincidentSlices(std::vector<PlineCoincidentIntersect<Real>> &coincid
       sliceEndPoints.erase(sliceEndPoints.begin());
       sliceStartPoints.erase(sliceStartPoints.begin());
       coincidentSlices.erase(coincidentSlices.begin());
+      coincidentIsOpposingDirection.erase(coincidentIsOpposingDirection.begin());
     }
   }
 

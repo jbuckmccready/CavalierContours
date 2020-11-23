@@ -14,6 +14,7 @@ template <typename Real> struct ProcessForCombineResult {
   std::vector<PlineIntersect<Real>> nonCoincidentIntersects;
   std::vector<PlineIntersect<Real>> coincidentSliceStartPoints;
   std::vector<PlineIntersect<Real>> coincidentSliceEndPoints;
+  std::vector<bool> coincidentIsOpposingDirection;
   bool pline1IsCW = false;
   bool pline2IsCW = false;
   bool completelyCoincident() const {
@@ -53,15 +54,17 @@ processForCombine(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
   result.coincidentSlices.swap(coincidentSliceResults.coincidentSlices);
   result.coincidentSliceStartPoints.swap(coincidentSliceResults.sliceStartPoints);
   result.coincidentSliceEndPoints.swap(coincidentSliceResults.sliceEndPoints);
+  result.coincidentIsOpposingDirection.swap(coincidentSliceResults.coincidentIsOpposingDirection);
 
   return result;
 }
 
 template <typename Real> struct SlicePoint {
   Vector2<Real> pos;
-  // indicates a forced terminating point of a slice
-  bool termination;
-  SlicePoint(Vector2<Real> const &pos, bool termination) : pos(pos), termination(termination) {}
+  // indicates slice point is the start of a coincident slice
+  bool startOfCoincidentSlice;
+  SlicePoint(Vector2<Real> const &pos, bool startOfCoincidentSlice)
+      : pos(pos), startOfCoincidentSlice(startOfCoincidentSlice) {}
 };
 
 /// Slice the given pline at all of its intersects for combining. If useSecondIndex is true then the
@@ -85,22 +88,15 @@ void sliceAtIntersects(Polyline<Real> const &pline,
       intersectsLookup[intr.sIndex2].push_back(SlicePoint<Real>(intr.pos, false));
     }
 
-    if (combineInfo.plineOpposingDirections()) {
-      // start and end points are flipped
-      for (PlineIntersect<Real> const &intr : combineInfo.coincidentSliceEndPoints) {
-        intersectsLookup[intr.sIndex2].push_back(SlicePoint<Real>(intr.pos, true));
-      }
-
-      for (PlineIntersect<Real> const &intr : combineInfo.coincidentSliceStartPoints) {
-        intersectsLookup[intr.sIndex2].push_back(SlicePoint<Real>(intr.pos, false));
-      }
-    } else {
-      // start and end points are not flipped
-      for (PlineIntersect<Real> const &intr : combineInfo.coincidentSliceStartPoints) {
-        intersectsLookup[intr.sIndex2].push_back(SlicePoint<Real>(intr.pos, true));
-      }
-      for (PlineIntersect<Real> const &intr : combineInfo.coincidentSliceEndPoints) {
-        intersectsLookup[intr.sIndex2].push_back(SlicePoint<Real>(intr.pos, false));
+    for (std::size_t i = 0; i < combineInfo.coincidentSliceStartPoints.size(); ++i) {
+      auto const &sp = combineInfo.coincidentSliceStartPoints[i];
+      auto const &ep = combineInfo.coincidentSliceEndPoints[i];
+      if (combineInfo.coincidentIsOpposingDirection[i]) {
+        intersectsLookup[sp.sIndex2].push_back(SlicePoint<Real>(sp.pos, false));
+        intersectsLookup[ep.sIndex2].push_back(SlicePoint<Real>(ep.pos, true));
+      } else {
+        intersectsLookup[sp.sIndex2].push_back(SlicePoint<Real>(sp.pos, true));
+        intersectsLookup[ep.sIndex2].push_back(SlicePoint<Real>(ep.pos, false));
       }
     }
   } else {
@@ -129,7 +125,7 @@ void sliceAtIntersects(Polyline<Real> const &pline,
   for (auto const &kvp : intersectsLookup) {
     // start index for the slice we're about to build
     std::size_t sIndex = kvp.first;
-    // self intersect list for this start index
+    // intersect list for this start index
     std::vector<SlicePoint<Real>> const &intrsList = kvp.second;
 
     const auto &firstSegStartVertex = pline[sIndex];
@@ -146,6 +142,11 @@ void sliceAtIntersects(Polyline<Real> const &pline,
         SplitResult<Real> split = splitAtPoint(prevVertex, firstSegEndVertex, intrsList[i].pos);
         // update prevVertex for next loop iteration
         prevVertex = split.splitVertex;
+
+        if (intrsList[i - 1].startOfCoincidentSlice) {
+          // skip coincident slices
+          continue;
+        }
 
         if (fuzzyEqual(split.updatedStart.pos(), split.splitVertex.pos(),
                        utils::realPrecision<Real>())) {
@@ -164,7 +165,8 @@ void sliceAtIntersects(Polyline<Real> const &pline,
       }
     }
 
-    if (intrsList.back().termination) {
+    if (intrsList.back().startOfCoincidentSlice) {
+      // skip coincident slices
       continue;
     }
     // build the segment between the last intersect in instrsList and the next intersect found
@@ -214,6 +216,67 @@ void sliceAtIntersects(Polyline<Real> const &pline,
   }
 }
 
+/// Type to hold all the slices collected after slicing at intersects, slicesRemaining holds the
+/// following: non-coincident slices from plineA, followed by non-coincident slices from plineB,
+/// followed by coincident slices from plineA, followed by coincident slices from plineB
+/// other fields hold the index markers
+template <typename Real> struct CollectedSlices {
+  std::vector<Polyline<Real>> slicesRemaining;
+  std::size_t startOfPlineBSlicesIdx;
+  std::size_t startOfPlineACoincidentSlicesIdx;
+  std::size_t startOfPlineBCoincidentSlicesIdx;
+};
+
+template <typename Real, typename PlineAPointOnSlicePred, typename PlineBPointOnSlicePred>
+CollectedSlices<Real> collectSlices(Polyline<Real> const &plineA, Polyline<Real> const &plineB,
+                                    ProcessForCombineResult<Real> const &combineInfo,
+                                    PlineAPointOnSlicePred &&plineAPointOnSlicePred,
+                                    PlineBPointOnSlicePred &&plineBPointOnSlicePred,
+                                    bool setOpposingOrientation) {
+  CollectedSlices<Real> result;
+  auto &slicesRemaining = result.slicesRemaining;
+
+  // slice plineA
+  sliceAtIntersects(plineA, combineInfo, false, plineAPointOnSlicePred, slicesRemaining);
+
+  // slice plineB
+  result.startOfPlineBCoincidentSlicesIdx = slicesRemaining.size();
+  sliceAtIntersects(plineB, combineInfo, true, plineBPointOnSlicePred, slicesRemaining);
+
+  // add plineA coincident slices
+  result.startOfPlineACoincidentSlicesIdx = slicesRemaining.size();
+  slicesRemaining.insert(slicesRemaining.end(), combineInfo.coincidentSlices.begin(),
+                         combineInfo.coincidentSlices.end());
+
+  // add plineB coincident slices
+  std::size_t startOfPlineBCoincidentSlices = slicesRemaining.size();
+  slicesRemaining.insert(slicesRemaining.end(), combineInfo.coincidentSlices.begin(),
+                         combineInfo.coincidentSlices.end());
+
+  // invert direction of plineB coincident slices to match original orientation
+  std::size_t coincidentSliceIdx = 0;
+  for (std::size_t i = startOfPlineBCoincidentSlices; i < slicesRemaining.size(); ++i) {
+    if (combineInfo.coincidentIsOpposingDirection[coincidentSliceIdx]) {
+      invertDirection(slicesRemaining[i]);
+    }
+    ++coincidentSliceIdx;
+  }
+
+  if (setOpposingOrientation != combineInfo.plineOpposingDirections()) {
+    // invert plineB slice directions to match request of setOpposingOrientation
+    for (std::size_t i = result.startOfPlineBSlicesIdx; i < result.startOfPlineACoincidentSlicesIdx;
+         ++i) {
+      invertDirection(slicesRemaining[i]);
+    }
+
+    for (std::size_t i = result.startOfPlineBCoincidentSlicesIdx; i < slicesRemaining.size(); ++i) {
+      invertDirection(slicesRemaining[i]);
+    }
+  }
+
+  return result;
+}
+
 struct StitchFirstAvailable {
   std::size_t operator()(std::size_t currSliceIndex, std::vector<std::size_t> const &available) {
     (void)currSliceIndex;
@@ -234,7 +297,7 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
     return result;
   }
 
-  // load all the slice end points (start and end) into spatial index
+  // load all the slice start points into spatial index
   StaticSpatialIndex<Real> spatialIndex(slices.size());
   auto addEndPoint = [&](Vector2<Real> const &pt) {
     spatialIndex.add(pt.x() - joinThreshold, pt.y() - joinThreshold, pt.x() + joinThreshold,
@@ -276,7 +339,6 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
     currPline.vertexes().insert(currPline.vertexes().end(), slices[i].vertexes().begin(),
                                 slices[i].vertexes().end());
 
-    // else continue appending slices to polyline
     const std::size_t beginningSliceIndex = i;
     std::size_t currSliceIndex = i;
     std::size_t loopCount = 0;
@@ -307,6 +369,10 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
       }
 
       std::size_t connectedSliceIndex = stitchSelector(currSliceIndex, queryResults);
+      if (connectedSliceIndex == std::numeric_limits<std::size_t>::max()) {
+        // discard current polyline
+        break;
+      }
       if (connectedSliceIndex == beginningSliceIndex) {
         closePline(currPline);
         break;
@@ -363,28 +429,98 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
   auto isAInsideB = [&] { return pointInB(plineA[0].pos()); };
   auto isBInsideA = [&] { return pointInA(plineB[0].pos()); };
 
-  // creates a slice stitch selector to prioritize the opposing polyline's slices
-  auto createOpposingSelector = [](std::size_t firstSliceCount) {
-    return [=](std::size_t currSliceIndex, const std::vector<std::size_t> &available) {
-      if (currSliceIndex < firstSliceCount) {
-        // prioritize second set of slices
+  auto createUnionAndIntersectStitchSelector = [](std::size_t startOfCoincidentSlicesIdx) {
+    return [=](std::size_t currSliceIndex, std::vector<std::size_t> const &available) {
+      // attempt to select noncoincident slice
+      auto idx = std::find_if(available.begin(), available.end(),
+                              [&](auto i) { return i < startOfCoincidentSlicesIdx; });
+      if (idx == available.end()) {
+        // no noncoincident slices available
+        if (currSliceIndex >= startOfCoincidentSlicesIdx) {
+          // stitching coincident to coincident is never allowed (discarded)
+          return std::numeric_limits<std::size_t>::max();
+        }
+        // use first available
+        return available[0];
+      }
+
+      // use first noncoincident slice
+      return *idx;
+    };
+  };
+
+  auto createExcludeAndXORStitchSelector = [](std::size_t startOfPlineBSlicesIdx,
+                                              std::size_t startOfPlineACoincidentSlicesIdx,
+                                              std::size_t startOfPlineBCoincidentSlicesIdx) {
+    return [=](std::size_t currSliceIndex, std::vector<std::size_t> const &available) {
+      if (currSliceIndex >= startOfPlineACoincidentSlicesIdx) {
+        // current slice is coincident
+        if (currSliceIndex < startOfPlineBCoincidentSlicesIdx) {
+          // current coincident slice is from A, attempt to stitch to slice from plineB
+          auto idx = std::find_if(available.begin(), available.end(), [&](auto i) {
+            return i >= startOfPlineBSlicesIdx && i < startOfPlineACoincidentSlicesIdx;
+          });
+
+          if (idx != available.end()) {
+            // stitch to plineB slice
+            return *idx;
+          }
+
+          // attempt to stitch to slice from plineA
+          idx = std::find_if(available.begin(), available.end(),
+                             [&](auto i) { return i < startOfPlineBSlicesIdx; });
+
+          if (idx != available.end()) {
+            // stitch to plineA slice
+            return *idx;
+          }
+
+          // no noncoincident slices available and stitching coincident to coincident is never
+          // allowed (discarded)
+          return std::numeric_limits<std::size_t>::max();
+        }
+        // else current coincident slice is from B, attempt to stitch to slice from plineA
         auto idx = std::find_if(available.begin(), available.end(),
-                                [&](auto i) { return i >= firstSliceCount; });
-        if (idx == available.end()) {
-          return available[0];
+                                [&](auto i) { return i < startOfPlineBSlicesIdx; });
+
+        if (idx != available.end()) {
+          // stitch to plineA slice
+          return *idx;
         }
 
-        return *idx;
-      } else {
-        // prioritize first set of slices
-        auto idx = std::find_if(available.begin(), available.end(),
-                                [&](auto i) { return i < firstSliceCount; });
-        if (idx == available.end()) {
-          return available[0];
+        // attempt to stitch to slice from plineB
+        idx = std::find_if(available.begin(), available.end(),
+                           [&](auto i) { return i < startOfPlineACoincidentSlicesIdx; });
+
+        if (idx != available.end()) {
+          // stitch to plineB slice
+          return *idx;
         }
 
+        // no noncoincident slices available and stitching coincident to coincident is never
+        // allowed (discarded)
+        return std::numeric_limits<std::size_t>::max();
+      } else if (currSliceIndex < startOfPlineBSlicesIdx) {
+        // current slice is from plineA, attempt to stitch to slice from plineB
+        auto idx = std::find_if(available.begin(), available.end(), [&](auto i) {
+          return i >= startOfPlineBSlicesIdx && i < startOfPlineACoincidentSlicesIdx;
+        });
+
+        if (idx != available.end()) {
+          return *idx;
+        }
+
+        return available[0];
+      }
+      // else current slice is from plineB, attempt to stitch to slice from plineA
+      auto idx = std::find_if(available.begin(), available.end(),
+                              [&](auto i) { return i < startOfPlineBSlicesIdx; });
+
+      if (idx != available.end()) {
         return *idx;
       }
+
+      return available[0];
     };
   };
 
@@ -403,28 +539,16 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
         result.remaining.push_back(plineB);
       }
     } else {
-      std::vector<Polyline<Real>> slicesRemaining;
-      // slice plineB, keeping all slices not in plineA
-      sliceAtIntersects(
-          plineB, combineInfo, true, [&](auto pt) { return !pointInA(pt); }, slicesRemaining);
+      // keep all slices on A that are not in B and all slices on B that are not in A
+      auto collectedSlices = collectSlices(
+          plineA, plineB, combineInfo, [&](auto pt) { return !pointInB(pt); },
+          [&](auto pt) { return !pointInA(pt); }, false);
 
-      // when joining the slices in a union we want them oriented the same
-      if (combineInfo.plineOpposingDirections()) {
-        for (auto &slice : slicesRemaining) {
-          invertDirection(slice);
-        }
-      }
-
-      // slice plineA, keeping all slices not in plineB
-      sliceAtIntersects(
-          plineA, combineInfo, false, [&](auto pt) { return !pointInB(pt); }, slicesRemaining);
-
-      // include coincident slices for the union (note they are oriented the same as plineA/pline1)
-      slicesRemaining.insert(slicesRemaining.end(), combineInfo.coincidentSlices.begin(),
-                             combineInfo.coincidentSlices.end());
+      auto stitchSelector =
+          createUnionAndIntersectStitchSelector(collectedSlices.startOfPlineACoincidentSlicesIdx);
 
       std::vector<Polyline<Real>> remaining =
-          stitchOrderedSlicesIntoClosedPolylines(slicesRemaining);
+          stitchOrderedSlicesIntoClosedPolylines(collectedSlices.slicesRemaining, stitchSelector);
 
       for (std::size_t i = 0; i < remaining.size(); ++i) {
         const bool isCW = getArea(remaining[i]) < Real(0);
@@ -456,26 +580,15 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
         result.remaining.push_back(plineA);
       }
     } else {
-      std::vector<Polyline<Real>> slicesRemaining;
+      // keep all slices on A that are not in B and all slices on B that are in A
+      auto collectedSlices = collectSlices(
+          plineA, plineB, combineInfo, [&](auto pt) { return !pointInB(pt); }, pointInA, true);
 
-      // slice plineB, keeping all slices in plineA
-      sliceAtIntersects(plineB, combineInfo, true, pointInA, slicesRemaining);
-
-      // when joining the slices we want them oriented opposite
-      if (!combineInfo.plineOpposingDirections()) {
-        for (auto &slice : slicesRemaining) {
-          invertDirection(slice);
-        }
-      }
-
-      const std::size_t plineBSliceCount = slicesRemaining.size();
-
-      // slice plineA, keeping all slices not in plineB
-      sliceAtIntersects(
-          plineA, combineInfo, false, [&](auto pt) { return !pointInB(pt); }, slicesRemaining);
-
-      auto stitchSelector = createOpposingSelector(plineBSliceCount);
-      result.remaining = stitchOrderedSlicesIntoClosedPolylines(slicesRemaining, stitchSelector);
+      auto stitchSelector = createExcludeAndXORStitchSelector(
+          collectedSlices.startOfPlineBSlicesIdx, collectedSlices.startOfPlineACoincidentSlicesIdx,
+          collectedSlices.startOfPlineBCoincidentSlicesIdx);
+      result.remaining =
+          stitchOrderedSlicesIntoClosedPolylines(collectedSlices.slicesRemaining, stitchSelector);
     }
   };
 
@@ -491,24 +604,14 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
         result.remaining.push_back(plineB);
       } // else no overlap
     } else {
-      std::vector<Polyline<Real>> slicesRemaining;
-      // slice plineB, keeping all slices in plineA
-      sliceAtIntersects(plineB, combineInfo, true, pointInA, slicesRemaining);
+      // keep all slices on A that are in B and all slices on B that are in A
+      auto collectedSlices = collectSlices(plineA, plineB, combineInfo, pointInB, pointInA, false);
 
-      // when joining the slices in a union we want them oriented the same
-      if (combineInfo.plineOpposingDirections()) {
-        for (auto &slice : slicesRemaining) {
-          invertDirection(slice);
-        }
-      }
+      auto stitchSelector =
+          createUnionAndIntersectStitchSelector(collectedSlices.startOfPlineACoincidentSlicesIdx);
 
-      // slice plineA, keeping all slices in plineB
-      sliceAtIntersects(plineA, combineInfo, false, pointInB, slicesRemaining);
-
-      // include coincident segments for the intersect
-      slicesRemaining.insert(slicesRemaining.end(), combineInfo.coincidentSlices.begin(),
-                             combineInfo.coincidentSlices.end());
-      result.remaining = stitchOrderedSlicesIntoClosedPolylines(slicesRemaining);
+      result.remaining =
+          stitchOrderedSlicesIntoClosedPolylines(collectedSlices.slicesRemaining, stitchSelector);
     }
   };
 
@@ -528,26 +631,37 @@ CombineResult<Real> combinePolylines(Polyline<Real> const &plineA, Polyline<Real
         result.remaining.push_back(plineB);
       }
     } else {
-      std::vector<Polyline<Real>> slicesRemaining;
-      // slice plineB, keeping all slices
-      sliceAtIntersects(
-          plineB, combineInfo, true, [&](auto) { return true; }, slicesRemaining);
 
-      // when joining the slices we want them oriented opposite
-      if (!combineInfo.plineOpposingDirections()) {
-        for (auto &slice : slicesRemaining) {
-          invertDirection(slice);
-        }
+      // collect A excluding B results
+      {
+        // keep all slices on A that are not in B and all slices on B that are in A
+        auto collectedSlices = collectSlices(
+            plineA, plineB, combineInfo, [&](auto pt) { return !pointInB(pt); }, pointInA, true);
+
+        auto stitchSelector =
+            createExcludeAndXORStitchSelector(collectedSlices.startOfPlineBSlicesIdx,
+                                              collectedSlices.startOfPlineACoincidentSlicesIdx,
+                                              collectedSlices.startOfPlineBCoincidentSlicesIdx);
+        result.remaining =
+            stitchOrderedSlicesIntoClosedPolylines(collectedSlices.slicesRemaining, stitchSelector);
       }
 
-      const std::size_t plineBSliceCount = slicesRemaining.size();
+      // collect B excluding A results
+      {
+        // keep all slices on A that are in B and all slices on B that are not in A
+        auto collectedSlices = collectSlices(
+            plineA, plineB, combineInfo, pointInB, [&](auto pt) { return !pointInA(pt); }, true);
 
-      // slice plineA, keeping all slices
-      sliceAtIntersects(
-          plineA, combineInfo, false, [&](auto) { return true; }, slicesRemaining);
-
-      auto stitchSelector = createOpposingSelector(plineBSliceCount);
-      result.remaining = stitchOrderedSlicesIntoClosedPolylines(slicesRemaining, stitchSelector);
+        auto stitchSelector =
+            createExcludeAndXORStitchSelector(collectedSlices.startOfPlineBSlicesIdx,
+                                              collectedSlices.startOfPlineACoincidentSlicesIdx,
+                                              collectedSlices.startOfPlineBCoincidentSlicesIdx);
+        auto stitchedResults =
+            stitchOrderedSlicesIntoClosedPolylines(collectedSlices.slicesRemaining, stitchSelector);
+        for (auto &r : stitchedResults) {
+          result.remaining.push_back(std::move(r));
+        }
+      }
     }
   };
 

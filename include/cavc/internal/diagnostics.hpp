@@ -20,6 +20,17 @@ std::string printVertexesToInitializerList(::cavc::Polyline<Real> const &pline) 
   result.push_back('}');
   return result;
 }
+
+template <typename Real> std::string propertiesFromPolyline(::cavc::Polyline<Real> const &pline) {
+  auto area = getArea(pline);
+  auto pathLength = getPathLength(pline);
+  auto extents = getExtents(pline);
+  std::stringstream ss;
+  ss << std::setprecision(14) << "(" << pline.size() << ", " << area << ", " << pathLength << ", "
+     << extents.xMin << ", " << extents.yMin << ", " << extents.xMax << ", " << extents.yMax << ")";
+  std::string result = ss.str();
+  return result;
+}
 } // namespace internal
 } // namespace cavc
 #endif // CAVC_INTERNAL_DIAGNOSTICS_HPP

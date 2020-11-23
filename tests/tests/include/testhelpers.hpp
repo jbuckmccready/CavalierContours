@@ -1,6 +1,8 @@
 #ifndef CAVC_TESTHELPERS_HPP
 #define CAVC_TESTHELPERS_HPP
 #include "cavaliercontours.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include <cmath>
 #include <iostream>
 constexpr inline cavc_real PI() { return 3.14159265358979323846264338327950288; }
@@ -33,6 +35,16 @@ struct PolylineProperties {
     cavc_get_extents(pline, &minX, &minY, &maxX, &maxY);
   }
 };
+
+MATCHER(EqIgnoreSignOfArea, "") {
+  auto const &left = std::get<0>(arg);
+  auto const &right = std::get<1>(arg);
+  return left.vertexCount == right.vertexCount &&
+         fuzzyEqual(std::abs(left.area), std::abs(right.area)) &&
+         fuzzyEqual(left.pathLength, right.pathLength) && fuzzyEqual(left.minX, right.minX) &&
+         fuzzyEqual(left.minY, right.minY) && fuzzyEqual(left.maxX, right.maxX) &&
+         fuzzyEqual(left.maxY, right.maxY);
+}
 
 // fuzzy equality operator== for testing
 inline bool operator==(PolylineProperties const &left, PolylineProperties const &right) {

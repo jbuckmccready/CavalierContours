@@ -130,6 +130,23 @@ SplitResult<Real> splitAtPoint(PlineVertex<Real> const &v1, PlineVertex<Real> co
   return result;
 }
 
+template <typename Real>
+Vector2<Real> segTangentVector(PlineVertex<Real> const &v1, PlineVertex<Real> const &v2,
+                               Vector2<Real> const &pointOnSeg) {
+  if (v1.bulgeIsZero()) {
+    return v2.pos() - v1.pos();
+  }
+
+  auto arc = arcRadiusAndCenter(v1, v2);
+  if (v1.bulgeIsPos()) {
+    // ccw, rotate vector from center to pointOnCurve 90 degrees
+    return Vector2<Real>(-(pointOnSeg.y() - arc.center.y()), pointOnSeg.x() - arc.center.x());
+  }
+
+  // cw, rotate vector from center to pointOnCurve -90 degrees
+  return Vector2<Real>(pointOnSeg.y() - arc.center.y(), -(pointOnSeg.x() - arc.center.x()));
+}
+
 /// Compute the closest point on a segment defined by v1 to v2 to the point given.
 template <typename Real>
 Vector2<Real> closestPointOnSeg(PlineVertex<Real> const &v1, PlineVertex<Real> const &v2,
