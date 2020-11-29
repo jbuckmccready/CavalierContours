@@ -335,6 +335,7 @@ public:
     if (pline.vertexes().size() == 1) {
       m_index = 0;
       m_distance = length(point - pline[0].pos());
+      m_point = pline[0].pos();
       return;
     }
 
@@ -375,8 +376,8 @@ public:
   Real distance() const { return m_distance; }
 
 private:
-  std::size_t m_index;
-  Vector2<Real> m_point;
+  std::size_t m_index = 0;
+  Vector2<Real> m_point = Vector2<Real>::zero();
   Real m_distance;
 };
 
