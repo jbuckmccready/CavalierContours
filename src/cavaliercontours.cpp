@@ -129,8 +129,7 @@ void cavc_pline_remove_range(cavc_pline *pline, uint32_t start_index, uint32_t c
   CAVC_ASSERT(start_index + count <= pline->data.size(), "count is out of vertexes range");
   CAVC_BEGIN_TRY_CATCH
   auto &vertexes = pline->data.vertexes();
-  auto start_it = vertexes.begin();
-  std::advance(start_it, start_index);
+  auto start_it = vertexes.begin() + static_cast<std::ptrdiff_t>(start_index);
   vertexes.erase(start_it, start_it + static_cast<std::ptrdiff_t>(count));
   CAVC_END_TRY_CATCH
 }
