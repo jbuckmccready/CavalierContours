@@ -110,7 +110,7 @@ Here is example code and visualizations of the algorithm operating on a closed p
 
 
 # Interactively Exploring the Algorithm
-An interactive UI app (implemented using Qt and QML) is available ([CavalierContoursDev](https://github.com/jbuckmccready/CavalierContoursDev)) to visualize and explore in real time the offset algorithm. The app was used to generate all the images in this markdown.
+An interactive UI app (implemented using Qt and QML) is available ([CavalierContoursDev](https://github.com/jbuckmccready/CavalierContoursDev)) to visualize and explore in real time the offset algorithm. This app is also compiled to web assembly, for the live web version go [here](https://jbuckmccready.github.io/CavalierContoursWebDemo/). The app was used to generate all the images in this markdown.
 
 # Performance
 The implementation is not entirely geared around performance but some profiling has been done to determine where to reserve memory up front and avoid trig functions where possible. I suspect there is quite a bit of performance to be gained in using a custom memory allocator, and there may be ways to modify the algorithm to prune invalid segments faster.
