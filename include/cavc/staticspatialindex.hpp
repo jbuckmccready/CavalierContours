@@ -340,7 +340,7 @@ private:
   Real m_maxY;
   std::size_t m_numItems;
   std::size_t m_numLevels;
-  // using std::unique_ptr arrays for unitialized memory optimization
+  // using std::unique_ptr arrays for uninitialized memory optimization
   std::unique_ptr<std::size_t[]> m_levelBounds;
   std::size_t m_numNodes;
   std::unique_ptr<Real[]> m_boxes;

@@ -286,7 +286,7 @@ struct StitchFirstAvailable {
 
 /// Stiches open polyline slices together into closed polylines. The open polylines must be
 /// ordered/agree on direction (every start point connects with an end point). sitchSelector may be
-/// used to determine priority of stitching in the case multiple possibilties exist.
+/// used to determine priority of stitching in the case multiple possibilities exist.
 template <typename Real, typename StitchSelector = StitchFirstAvailable>
 std::vector<Polyline<Real>>
 stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices,
@@ -395,7 +395,7 @@ stitchOrderedSlicesIntoClosedPolylines(std::vector<Polyline<Real>> const &slices
 /// Combine mode to apply to closed polylines, corresponds to the various boolean operations that
 /// are possible on polygons.
 /// Union(A, B) = A OR B.
-/// Exlude(A, B) = A NOT B.
+/// Exclude(A, B) = A NOT B.
 /// Intersect(A, B) = A AND B.
 /// XOR(A, B) = A XOR B.
 enum class PlineCombineMode { Union, Exclude, Intersect, XOR };

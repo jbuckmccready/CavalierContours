@@ -36,7 +36,7 @@ public:
   std::vector<PVertex> &vertexes() { return m_vertexes; }
   std::vector<PVertex> const &vertexes() const { return m_vertexes; }
 
-  /// Iterate the segement indices of the polyline. visitor function is invoked for each segment
+  /// Iterate the segment indices of the polyline. visitor function is invoked for each segment
   /// index pair, stops when all indices have been visited or visitor returns false. visitor
   /// signature is bool(std::size_t, std::size_t).
   template <typename VisitorF> void visitSegIndices(VisitorF &&visitor) const {

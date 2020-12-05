@@ -76,32 +76,32 @@ public:
   }
 
   Real &x() {
-    static_assert(N >= 1, "N >= 1 to accesss x");
+    static_assert(N >= 1, "N >= 1 to access x");
     return m_data[0];
   }
 
   Real x() const {
-    static_assert(N >= 1, "N >= 1 to accesss x");
+    static_assert(N >= 1, "N >= 1 to access x");
     return m_data[0];
   }
 
   Real &y() {
-    static_assert(N >= 2, "N >= 2 to accesss y");
+    static_assert(N >= 2, "N >= 2 to access y");
     return m_data[1];
   }
 
   Real y() const {
-    static_assert(N >= 2, "N >= 2 to accesss y");
+    static_assert(N >= 2, "N >= 2 to access y");
     return m_data[1];
   }
 
   Real &z() {
-    static_assert(N >= 3, "N >= 3 to accesss z");
+    static_assert(N >= 3, "N >= 3 to access z");
     return m_data[2];
   }
 
   Real z() const {
-    static_assert(N >= 3, "N >= 3 to accesss z");
+    static_assert(N >= 3, "N >= 3 to access z");
     return m_data[2];
   }
 

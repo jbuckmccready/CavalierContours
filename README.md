@@ -79,7 +79,7 @@ CavalierContours is written in C++ and makes available a C API. Here are some wr
 6. Discard all open polyline slices whose minimum distance to *pline* is less than the offset.
 7. Stitch together the remaining open polyline slices found in step 6, closing the final stitched results if *pline* is closed.
 
-The algorithm is mostly based on Liu et al. [[1]](#references) with some differences since the algorithm they describe for GCPP (general closest point pair) clipping fails for certain inputs with large offsets (or atleast I am unable to make their algorithm work).
+The algorithm is mostly based on Liu et al. [[1]](#references) with some differences since the algorithm they describe for GCPP (general closest point pair) clipping fails for certain inputs with large offsets (or at least I am unable to make their algorithm work).
 
 The key clarifications/differences are:
 - When raw offset segments are extended to form a raw offset polyline they are always joined by an arc to form a rounded constant distance from the input polyline.
