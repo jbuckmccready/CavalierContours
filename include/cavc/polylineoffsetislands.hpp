@@ -86,7 +86,7 @@ private:
   // spatial index of all the offset loops
   std::unique_ptr<StaticSpatialIndex<Real>> m_offsetLoopsIndex;
   using IndexPair = std::pair<std::size_t, std::size_t>;
-  // set to keep track of already visted pairs of loops when finding intersects
+  // set to keep track of already visited pairs of loops when finding intersects
   std::unordered_set<IndexPair, internal::IndexPairHash> m_visitedLoopPairs;
   // buffers to use for querying spatial indexes
   std::vector<std::size_t> m_queryStack;
