@@ -392,7 +392,10 @@ void findIntersects(Polyline<Real> const &pline1, Polyline<Real> const &pline2,
     queryResults.clear();
 
     AABB<Real> bb = createFastApproxBoundingBox(p2v1, p2v2);
-    pline1SpatialIndex.query(bb.xMin, bb.yMin, bb.xMax, bb.yMax, queryResults, queryStack);
+    // expand bounding box by threshold amount to ensure finding intersects at segment end points
+    Real fuzz = cavc::utils::realPrecision<Real>();
+    pline1SpatialIndex.query(bb.xMin - fuzz, bb.yMin - fuzz, bb.xMax + fuzz, bb.yMax + fuzz,
+                             queryResults, queryStack);
 
     for (std::size_t i1 : queryResults) {
       std::size_t j1 = utils::nextWrappingIndex(i1, pline1);
