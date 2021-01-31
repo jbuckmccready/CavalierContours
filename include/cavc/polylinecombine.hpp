@@ -284,7 +284,7 @@ struct StitchFirstAvailable {
   }
 };
 
-/// Stiches open polyline slices together into closed polylines. The open polylines must be
+/// Stitches open polyline slices together into closed polylines. The open polylines must be
 /// ordered/agree on direction (every start point connects with an end point). sitchSelector may be
 /// used to determine priority of stitching in the case multiple possibilities exist.
 template <typename Real, typename StitchSelector = StitchFirstAvailable>
