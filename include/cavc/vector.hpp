@@ -253,7 +253,6 @@ Real dot(Vector<Real, N> const &v0, Vector<Real, N> const &v1) {
 }
 
 template <std::size_t N, typename Real> Real length(Vector<Real, N> const &v) {
-  CAVC_ASSERT(!fuzzyZero(v), "length not defined for zero vector");
   return std::sqrt(dot(v, v));
 }
 
