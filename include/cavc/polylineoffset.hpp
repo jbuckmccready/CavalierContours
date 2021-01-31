@@ -3,6 +3,7 @@
 #include "polyline.hpp"
 #include "polylineintersects.hpp"
 #include <unordered_map>
+#include <map>
 #include <vector>
 
 // This header has functions for offsetting polylines
@@ -639,6 +640,10 @@ std::vector<OpenPolylineSlice<Real>> slicesFromRawOffset(Polyline<Real> const &o
     return result;
   }
 
+  // using unordered_map rather than map for performance (as is used in
+  // dualSliceAtIntersectsForOffset) since all slices will stitch together to form closed
+  // loops/polylines so later when slices are stitched together the order that slices are visited
+  // does not matter
   std::unordered_map<std::size_t, std::vector<Vector2<Real>>> intersectsLookup;
   intersectsLookup.reserve(2 * selfIntersects.size());
 
@@ -840,7 +845,11 @@ dualSliceAtIntersectsForOffset(Polyline<Real> const &originalPline,
   PlineIntersectsResult<Real> dualIntersects;
   findIntersects(rawOffsetPline, dualRawOffsetPline, rawOffsetPlineSpatialIndex, dualIntersects);
 
-  std::unordered_map<std::size_t, std::vector<Vector2<Real>>> intersectsLookup;
+  // using map rather than unordered map since we want to construct the slices in vertex index order
+  // and we do so by looping through all intersects (required later when slices are stitched
+  // together, because slices may not all form closed loops/polylines so must go in order of
+  // indexes to ensure longest sitched results are formed)
+  std::map<std::size_t, std::vector<Vector2<Real>>> intersectsLookup;
 
   if (!originalPline.isClosed()) {
     // find intersects between circles generated at original open polyline end points and raw offset
@@ -851,12 +860,9 @@ dualSliceAtIntersectsForOffset(Polyline<Real> const &originalPline,
     internal::offsetCircleIntersectsWithPline(rawOffsetPline, offset,
                                               originalPline.lastVertex().pos(),
                                               rawOffsetPlineSpatialIndex, intersects);
-    intersectsLookup.reserve(2 * selfIntersects.size() + intersects.size());
     for (auto const &pair : intersects) {
       intersectsLookup[pair.first].push_back(pair.second);
     }
-  } else {
-    intersectsLookup.reserve(2 * selfIntersects.size());
   }
 
   for (PlineIntersect<Real> const &si : selfIntersects) {
