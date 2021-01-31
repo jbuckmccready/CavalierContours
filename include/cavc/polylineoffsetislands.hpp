@@ -182,7 +182,7 @@ template <typename Real> void ParallelOffsetIslands<Real>::createSlicePoints() {
       intrsResults.coincidentIntersects.clear();
       // finding intersects
       findIntersects(loop1.polyline, loop2.polyline, index1, intrsResults);
-      if (intrsResults.intersects.size() != 0) {
+      if (intrsResults.hasIntersects()) {
         m_slicePointSets.emplace_back();
         auto &slicePointSet = m_slicePointSets.back();
         slicePointSet.loopIndex1 = i;

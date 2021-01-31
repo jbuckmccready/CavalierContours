@@ -44,6 +44,7 @@ template <typename Real> struct PlineCoincidentIntersect {
 template <typename Real> struct PlineIntersectsResult {
   std::vector<PlineIntersect<Real>> intersects;
   std::vector<PlineCoincidentIntersect<Real>> coincidentIntersects;
+  bool hasIntersects() { return intersects.size() != 0 || coincidentIntersects.size() != 0; }
 };
 
 template <typename Real> struct CoincidentSlicesResult {
