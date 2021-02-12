@@ -251,10 +251,10 @@ void arcToLineJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> 
     const bool trueArcIntersect =
         pointWithinArcSweepAngle(arc.center, v1.pos(), v2.pos(), v1.bulge(), intersect);
     if (trueSegIntersect && trueArcIntersect) {
-      // modify previous bulge and trim at intersect
       PlineVertex<Real> &prevVertex = result.lastVertex();
 
-      if (!prevVertex.bulgeIsZero()) {
+      if (!prevVertex.bulgeIsZero() && !fuzzyEqual(prevVertex.pos(), v2.pos())) {
+        // modify previous bulge and trim at intersect
         Real a = angle(arc.center, intersect);
         auto prevArc = arcRadiusAndCenter(prevVertex, v2);
         Real prevArcStartAngle = angle(prevArc.center, prevVertex.pos());
@@ -324,9 +324,9 @@ void arcToArcJoin(PlineOffsetSegment<Real> const &s1, PlineOffsetSegment<Real> c
         pointWithinArcSweepAngle(arc2.center, u1.pos(), u2.pos(), u1.bulge(), intersect);
 
     if (trueArcIntersect1 && trueArcIntersect2) {
-      // modify previous bulge and trim at intersect
       PlineVertex<Real> &prevVertex = result.lastVertex();
-      if (!prevVertex.bulgeIsZero()) {
+      if (!prevVertex.bulgeIsZero() && !fuzzyEqual(prevVertex.pos(), v2.pos())) {
+        // modify previous bulge and trim at intersect
         Real a1 = angle(arc1.center, intersect);
         auto prevArc = arcRadiusAndCenter(prevVertex, v2);
         Real prevArcStartAngle = angle(prevArc.center, prevVertex.pos());
