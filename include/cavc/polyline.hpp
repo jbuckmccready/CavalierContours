@@ -82,7 +82,6 @@ void translatePolyline(Polyline<Real> &pline, Vector2<Real> const &offset) {
 /// Compute the extents of a polyline, if there are no vertexes than -infinity to infinity bounding
 /// box is returned.
 template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
-
   if (pline.size() == 0) {
     return {std::numeric_limits<Real>::infinity(), std::numeric_limits<Real>::infinity(),
             -std::numeric_limits<Real>::infinity(), -std::numeric_limits<Real>::infinity()};
@@ -92,177 +91,61 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
 
   auto visitor = [&](std::size_t i, std::size_t j) {
     PlineVertex<Real> const &v1 = pline[i];
-    PlineVertex<Real> const &v2 = pline[j];
     if (v1.bulgeIsZero()) {
-      if (v2.x() < result.xMin) {
-        result.xMin = v2.x();
-      } else if (v2.x() > result.xMax) {
-        result.xMax = v2.x();
-      }
-
-      if (v2.y() < result.yMin) {
-        result.yMin = v2.y();
-      } else if (v2.y() > result.yMax) {
-        result.yMax = v2.y();
-      }
-
+      if (v1.x() < result.xMin)
+        result.xMin = v1.x();
+      if (v1.y() < result.yMin)
+        result.yMin = v1.y();
+      if (v1.x() > result.xMax)
+        result.xMax = v1.x();
+      if (v1.y() > result.yMax)
+        result.yMax = v1.y();
     } else {
-      AABB<Real> arcBB;
-      // bounds of chord
-      if (v1.x() < v2.x()) {
-        arcBB.xMin = v1.x();
-        arcBB.xMax = v2.x();
-      } else {
-        arcBB.xMin = v2.x();
-        arcBB.xMax = v1.x();
-      }
-
-      if (v1.y() < v2.y()) {
-        arcBB.yMin = v1.y();
-        arcBB.yMax = v2.y();
-      } else {
-        arcBB.yMin = v2.y();
-        arcBB.yMax = v1.y();
-      }
-
-      // it's an arc segment, find axes crossings (with origin at arc center) to determine full
-      // extents
+      PlineVertex<Real> const &v2 = pline[j];
       auto arc = arcRadiusAndCenter(v1, v2);
-      auto circleXMaxPt = Vector2<Real>(arc.center.x() + arc.radius, arc.center.y());
-      auto circleYMaxPt = Vector2<Real>(arc.center.x(), arc.center.y() + arc.radius);
 
-      auto getQuadrant = [&](auto const &pt) {
-        // check axis aligned half circle boundary cases
-        if (utils::fuzzyEqual(pt.x(), arc.center.x())) {
-          // point lies on circle y axis
-        }
+      Real startAngle = angle(arc.center, v1.pos());
+      Real endAngle = angle(arc.center, v2.pos());
+      Real sweepAngle = utils::deltaAngle(startAngle, endAngle);
 
-        if (utils::fuzzyEqual(pt.y(), arc.center.y())) {
-          // point lies on circle x axis
-        }
+      Real arcXMin, arcYMin, arcXMax, arcYMax;
 
-        // non-boundary case
-        if (isLeft(arc.center, circleXMaxPt, pt)) {
-          // quadrant 1 or 2
-          if (isLeft(arc.center, circleYMaxPt, pt)) {
-            // quadrant 2
-            return 2;
-          }
-          // else quadrant 1
-          return 1;
-        } else {
-          // quadrant 3 or 4
-          if (isLeft(arc.center, circleYMaxPt, pt)) {
-            // quadrant 3
-            return 3;
-          }
-          // else qudrant 4
-          return 4;
-        }
-      };
-
-      // must check if arc is an axis aligned half circle, in which case the isLeft checks will fail
-      // at the boundaries so we must handle as special case
-      if (utils::fuzzyEqual(v1.x(), arc.center.x())) {
-        // y axis aligned half circle
-        const bool updateXMin = (v1.y() > v2.y()) ^ (v1.bulgeIsNeg());
-        if (updateXMin) {
-          arcBB.xMin = arc.center.x() - arc.radius;
-        } else {
-          arcBB.xMax = circleXMaxPt.x();
-        }
-      } else if (utils::fuzzyEqual(v1.y(), arc.center.y())) {
-        // x axis aligned half circle
-        const bool updateYMin = (v1.x() > v2.x()) ^ (v1.bulgeIsPos());
-        if (updateYMin) {
-          arcBB.yMin = arc.center.y() - arc.radius;
-        } else {
-          arcBB.yMax = circleYMaxPt.y();
-        }
+      // crosses PI/2
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(0.5) * utils::pi<Real>())) {
+        arcYMax = arc.center.y() + arc.radius;
       } else {
-        // not axis aligned, use isLeft checks to find quadrants and crossings
-        const int startPtQuad = getQuadrant(v1.pos());
-        const int endPtQuad = getQuadrant(v2.pos());
-        if (startPtQuad == 1) {
-          if (endPtQuad == 2) {
-            // crosses YMax
-            arcBB.yMax = circleYMaxPt.y();
-          } else if (endPtQuad == 3) {
-            if (v1.bulgeIsNeg()) {
-              // crosses xMax then yMin
-              arcBB.xMax = circleXMaxPt.x();
-              arcBB.yMin = arc.center.y() - arc.radius;
-            } else {
-              // crosses yMax then xMin
-              arcBB.yMax = circleYMaxPt.y();
-              arcBB.xMin = arc.center.x() - arc.radius;
-            }
-          } else if (endPtQuad == 4) {
-            // crosses XMax
-            arcBB.xMax = circleXMaxPt.x();
-          }
-        } else if (startPtQuad == 2) {
-          if (endPtQuad == 1) {
-            // crosses yMax
-            arcBB.yMax = circleYMaxPt.y();
-          } else if (endPtQuad == 3) {
-            // crosses xMin
-            arcBB.xMin = arc.center.x() - arc.radius;
-          } else if (endPtQuad == 4) {
-            if (v1.bulgeIsNeg()) {
-              // crosses yMax then xMax
-              arcBB.yMax = circleYMaxPt.y();
-              arcBB.xMax = circleXMaxPt.x();
-            } else {
-              // crosses xMin then yMin
-              arcBB.xMin = arc.center.x() - arc.radius;
-              arcBB.yMin = arc.center.y() - arc.radius;
-            }
-          }
-        } else if (startPtQuad == 3) {
-          if (endPtQuad == 1) {
-            if (v1.bulgeIsNeg()) {
-              // crosses xMin then yMax
-              arcBB.xMin = arc.center.x() - arc.radius;
-              arcBB.yMax = circleYMaxPt.y();
-            } else {
-              // crosses yMin then xMax
-              arcBB.yMin = arc.center.y() - arc.radius;
-              arcBB.xMax = circleXMaxPt.x();
-            }
-          } else if (endPtQuad == 2) {
-            // crosses xMin
-            arcBB.xMin = arc.center.x() - arc.radius;
-          } else if (endPtQuad == 4) {
-            // crosses yMin
-            arcBB.yMin = arc.center.y() - arc.radius;
-          }
-        } else {
-          CAVC_ASSERT(startPtQuad == 4, "shouldn't get here without start pt in quadrant 4");
-          if (endPtQuad == 1) {
-            // crosses xMax
-            arcBB.xMax = circleXMaxPt.x();
-          } else if (endPtQuad == 2) {
-            if (v1.bulgeIsNeg()) {
-              // crosses yMin then xMin
-              arcBB.yMin = arc.center.y() - arc.radius;
-              arcBB.xMin = arc.center.x() - arc.radius;
-            } else {
-              // crossses xMax then yMax
-              arcBB.xMax = circleXMaxPt.x();
-              arcBB.yMax = circleYMaxPt.y();
-            }
-          } else if (endPtQuad == 3) {
-            // crosses yMin
-            arcBB.yMin = arc.center.y() - arc.radius;
-          }
-        }
+        arcYMax = std::max(v1.y(), v2.y());
       }
 
-      result.xMin = std::min(result.xMin, arcBB.xMin);
-      result.yMin = std::min(result.yMin, arcBB.yMin);
-      result.xMax = std::max(result.xMax, arcBB.xMax);
-      result.yMax = std::max(result.yMax, arcBB.yMax);
+      // crosses PI
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, utils::pi<Real>())) {
+        arcXMin = arc.center.x() - arc.radius;
+      } else {
+        arcXMin = std::min(v1.x(), v2.x());
+      }
+
+      // crosses 3PI/2
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(1.5) * utils::pi<Real>())) {
+        arcYMin = arc.center.y() - arc.radius;
+      } else {
+        arcYMin = std::min(v1.y(), v2.y());
+      }
+
+      // crosses 2PI
+      if (utils::angleIsWithinSweep(startAngle, sweepAngle, Real(2) * utils::pi<Real>())) {
+        arcXMax = arc.center.x() + arc.radius;
+      } else {
+        arcXMax = std::max(v1.x(), v2.x());
+      }
+
+      if (arcXMin < result.xMin)
+        result.xMin = arcXMin;
+      if (arcYMin < result.yMin)
+        result.yMin = arcYMin;
+      if (arcXMax > result.xMax)
+        result.xMax = arcXMax;
+      if (arcYMax > result.yMax)
+        result.yMax = arcYMax;
     }
 
     // return true to iterate all segments
