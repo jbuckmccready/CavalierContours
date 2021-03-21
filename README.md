@@ -1,5 +1,5 @@
 # Summary
-NOTE: This library is not being actively developed (but reported bugs will still be fixed). Development is continuing in Rust (with a C FFI), the repository is [here](https://github.com/jbuckmccready/cavalier_contours).
+NOTE: This C++ library is not being actively developed. Development is continuing in Rust (with a C FFI), the repository is [here](https://github.com/jbuckmccready/cavalier_contours). This repository will remain available but I do not plan to add new features and bug fixes may not be as prompt.
 
 C++14 header only library (with a C API available) for processing 2D polylines containing both straight line and constant radius arc segments. Supports contour/parallel offsetting, boolean operations (OR, AND, NOT, XOR) between closed polylines, and other common functions (winding number, area, path length, distance to point, etc.). For interactive UI and development go to the development project [CavalierContoursDev](https://github.com/jbuckmccready/CavalierContoursDev). For quick code examples look in the [examples](examples/). Live web demo available [here](https://jbuckmccready.github.io/CavalierContoursWebDemo/) (note the page is quite large and may take a minute to download, it's created by building the CavalierContoursDev project to web assembly using Emscripten). For the C API header look [here](c_api_include/cavaliercontours.h).
 
