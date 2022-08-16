@@ -48,12 +48,12 @@ intrLineSeg2LineSeg2(Vector2<Real> const &u1, Vector2<Real> const &u2, Vector2<R
                         Vector2<Real> const &segEnd) {
     if (utils::fuzzyEqual(segStart.x(), segEnd.x())) {
       // vertical segment, test y coordinate
-      auto minMax = std::minmax(segStart.y(), segEnd.y());
+      auto minMax = std::minmax({segStart.y(), segEnd.y()});
       return utils::fuzzyInRange(minMax.first, pt.y(), minMax.second);
     }
 
     // else just test x coordinate
-    auto minMax = std::minmax(segStart.x(), segEnd.x());
+    auto minMax = std::minmax({segStart.x(), segEnd.x()});
     return utils::fuzzyInRange(minMax.first, pt.x(), minMax.second);
   };
 
