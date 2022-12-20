@@ -1,3 +1,4 @@
+#include <cstdint>
 #include "cavc/staticspatialindex.hpp"
 #include "testhelpers.hpp"
 #include "gmock/gmock.h"

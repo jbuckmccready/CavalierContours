@@ -2,7 +2,7 @@ include(FetchContent)
 FetchContent_Declare(
     benchmark
     GIT_REPOSITORY       https://github.com/google/benchmark.git
-    GIT_TAG              origin/master
+    GIT_TAG              origin/main
 )
 
 fetchcontent_getproperties(benchmark)
