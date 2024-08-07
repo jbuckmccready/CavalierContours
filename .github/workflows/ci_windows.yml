@@ -1,0 +1,67 @@
+name: Windows
+
+on:
+    [push, pull_request]
+
+jobs:
+    windows-msvc:
+
+        runs-on: windows-latest
+        name: windows-msvc-release
+
+        steps:
+        - name: Checkout repository
+          uses: actions/checkout@v2
+
+        - name: Configure Compiler
+          uses: ilammy/msvc-dev-cmd@v1
+
+        - name: Cache Vcpkg Packages
+          id: vcpkg-cache
+          uses: actions/cache@v3
+          with:
+                path: vcpkg_ci_env
+                key: vcpkg-cache-windowsci
+                restore-keys: |
+                    vcpkg-cache-windowsci
+
+        - name: Install Vcpkg
+          if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+          shell: powershell
+          run: |
+                echo "VCPKG_ROOT=" >> $GITHUB_ENV
+                git clone https://github.com/Microsoft/vcpkg.git vcpkg_ci_env
+                cd vcpkg_ci_env
+                .\bootstrap-vcpkg.bat
+                .\vcpkg integrate install
+                Add-Content -Path .\triplets\x64-windows.cmake -Value "set(VCPKG_BUILD_TYPE release)"
+                vcpkg install gtest --triplet x64-windows
+                vcpkg install benchmark --triplet x64-windows
+                Remove-Item -Recurse -Force buildtrees
+                Remove-Item -Recurse -Force downloads
+                Remove-Item -Recurse -Force packages
+                Remove-Item -Recurse -Force ports
+                Remove-Item -Recurse -Force triplets
+                ls
+
+        - name: Build Release
+          working-directory: ${{github.workspace}}
+          run: |
+                cmd.exe /k "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+                cmake -DVCPKG_MANIFEST_MODE=OFF `
+                -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_CXX_STANDARD=20 `
+                -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=cl.exe `
+                -DCMAKE_CXX_COMPILER=cl.exe `
+                -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg_ci_env/scripts/buildsystems/vcpkg.cmake `
+                -B${{github.workspace}}/build/win_msvc_release `
+                -S${{github.workspace}} -G Ninja
+                cmake --build ${{github.workspace}}/build/win_msvc_release --config Release --target all --
+
+        - name: Execute Unit Tests Release
+          working-directory: ${{github.workspace}}/build/win_msvc_release
+          shell: cmd
+          env:
+                PATH: ${{env.PATH}}
+          run: |
+                ctest -T test -j 2 --output-on-failure
+

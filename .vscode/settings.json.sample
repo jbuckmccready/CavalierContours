@@ -1,0 +1,200 @@
+{
+    "search.exclude": {
+        "Files/*": true,
+        "regressions/": true
+    },
+    "files.associations": {
+        "*.pl": "prolog",
+        ".py": "python",
+        "*.py.in": "python",
+        "*.cntxt": "json",
+        "*.rfpara": "json",
+        "*.json_share": "json",
+        "cctype": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "cstdarg": "cpp",
+        "cstddef": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "cstring": "cpp",
+        "ctime": "cpp",
+        "cwchar": "cpp",
+        "cwctype": "cpp",
+        "any": "cpp",
+        "array": "cpp",
+        "atomic": "cpp",
+        "strstream": "cpp",
+        "bit": "cpp",
+        "*.tcc": "cpp",
+        "cfenv": "cpp",
+        "charconv": "cpp",
+        "chrono": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "compare": "cpp",
+        "complex": "cpp",
+        "concepts": "cpp",
+        "condition_variable": "cpp",
+        "cstdint": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "exception": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "ratio": "cpp",
+        "source_location": "cpp",
+        "string_view": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "format": "cpp",
+        "fstream": "cpp",
+        "future": "cpp",
+        "initializer_list": "cpp",
+        "iomanip": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "mutex": "cpp",
+        "new": "cpp",
+        "numbers": "cpp",
+        "ostream": "cpp",
+        "ranges": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "span": "cpp",
+        "sstream": "cpp",
+        "stdexcept": "cpp",
+        "stdfloat": "cpp",
+        "stop_token": "cpp",
+        "streambuf": "cpp",
+        "thread": "cpp",
+        "typeindex": "cpp",
+        "typeinfo": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp",
+        "eigen": "cpp",
+        "*.lxx": "cpp",
+        "cerrno": "cpp",
+        "qjsonobject": "cpp",
+        "__bit_reference": "cpp",
+        "__config": "cpp",
+        "__debug": "cpp",
+        "__errc": "cpp",
+        "__hash_table": "cpp",
+        "__locale": "cpp",
+        "__mutex_base": "cpp",
+        "__node_handle": "cpp",
+        "__split_buffer": "cpp",
+        "__threading_support": "cpp",
+        "__verbose_abort": "cpp",
+        "bitset": "cpp",
+        "ios": "cpp",
+        "locale": "cpp",
+        "queue": "cpp",
+        "qjsonarray": "cpp",
+        "regex": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp",
+        "xtree": "cpp",
+        "qplaintextedit": "cpp",
+        "filesystem": "cpp",
+        "xfacet": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp",
+        "xlocbuf": "cpp",
+        "xlocinfo": "cpp",
+        "xlocmes": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xloctime": "cpp",
+        "xmemory": "cpp",
+        "xtr1common": "cpp",
+        "xutility": "cpp",
+        "stack": "cpp",
+        "span_ext": "cpp",
+        "__tree": "cpp",
+        "qvboxlayout": "cpp",
+        "cassert": "cpp",
+        "qmessagebox": "cpp",
+        "qfileinfo": "cpp",
+        "qapplication": "cpp",
+        "qpoint": "cpp",
+        "qstring": "cpp",
+        "qdockwidget": "cpp",
+        "qscrollarea": "cpp",
+        "qprogressbar": "cpp",
+        "qpainter": "cpp",
+        "qkeyevent": "cpp",
+        "coroutine": "cpp",
+        "resumable": "cpp",
+        "util": "cpp"
+    },
+    "cmake.cmakePath": "/home/linuxbrew/.linuxbrew/bin/cmake",
+    "cmake.configureOnOpen": false,
+    "cmake.environment": {
+        "PATH": "/home/linuxbrew/.linuxbrew/opt/qt@6/bin:/home/henry_wsl_slim/intel/oneapi/2024.0/bin:/home/linuxbrew/.linuxbrew/bin:${env:PATH}"
+    },
+    "cmake.options.statusBarVisibility": "compact",
+    "cmake.options.advanced": {
+        "build": {
+            "statusBarVisibility": "inherit"
+        },
+        "launch": {
+            "statusBarVisibility": "inherit"
+        },
+        "debug": {
+            "statusBarVisibility": "inherit"
+        },
+        "configurePreset": {
+            "statusBarVisibility": "inherit"
+        },
+        "buildPreset": {
+            "statusBarVisibility": "inherit"
+        },
+        "buildTarget": {
+            "statusBarVisibility": "inherit"
+        },
+        "testPreset": {
+            "statusBarVisibility": "hidden"
+        },
+        "ctest": {
+            "statusBarVisibility": "icon"
+        },
+        "packagePreset": {
+            "statusBarVisibility": "hidden"
+        },
+        "cpack": {
+            "statusBarVisibility": "inherit"
+        },
+        "workflow": {
+            "statusBarVisibility": "hidden"
+        },
+        "workflowPreset": {
+            "statusBarVisibility": "hidden"
+        }
+    },
+    "cmake.debugConfig": {
+        "args": [
+            "--gtest_filter=*"
+        ]
+    },
+    "qmlFormat.command": "C:/Qt/6.7.2/msvc2019_64/bin/qmlformat.exe",
+    "glsl-canvas.useCompactFormatter": false
+}

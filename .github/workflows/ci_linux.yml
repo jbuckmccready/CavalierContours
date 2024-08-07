@@ -1,0 +1,48 @@
+name: Linux
+
+on:
+    [push, pull_request]
+
+jobs:
+    build-linux-gcc:
+        runs-on: ubuntu-latest
+        name: linux-gcc-relase
+
+        env:
+            targetName: Gui
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Install brew and dependencies
+          run: |
+                sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
+                test -d ~/.linuxbrew && eval $(~/.linuxbrew/bin/brew shellenv)
+                test -d /home/linuxbrew/.linuxbrew && eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+                test -r ~/.profile
+                echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
+                echo "export PATH=\"$(brew --prefix)/bin:$PATH\"" >>~/.profile
+                source ~/.profile
+                brew install googletest
+                brew install google-benchmark
+                brew install ninja
+
+        - name: Ninja gcc build Release
+          working-directory: ${{github.workspace}}
+          run: |
+                source ~/.profile
+                cmake --no-warn-unused-cli \
+                -DCMAKE_BUILD_TYPE:STRING=Release \
+                -DCMAKE_CXX_STANDARD=20 \
+                -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE \
+                -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/gcc \
+                -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
+                -B${{github.workspace}}/build/Linux_Ninja_Release \
+                -S${{github.workspace}} -G Ninja
+                cmake --build ${{github.workspace}}/build/Linux_Ninja_Release --config Release --target all --
+
+        - name: Execute Unit Tests
+          working-directory: ${{github.workspace}}/build/Linux_Ninja_Release
+          run: |
+                ctest -T test -j 2 --output-on-failure
+
