@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 
-include(googlebenchmark.cmake)
 include(clipper.cmake)
+find_package(benchmark REQUIRED)
 
 macro(add_benchmark name)
   add_executable(${name} ${name}.cpp)

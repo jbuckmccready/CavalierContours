@@ -50,8 +50,7 @@
                     ],
                     "intelliSenseMode": "windows-msvc-x64"
                 }
-            },
-            "toolchainFile": "${env.VcPkgDir}/scripts/buildsystems/vcpkg.cmake"
+            }
         },
         {
             "name": "msvc-ninja-release",
