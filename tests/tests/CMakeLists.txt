@@ -22,7 +22,7 @@ macro(cavc_add_test name)
         GTest::gtest
         GTest::gmock)
 
-    gtest_add_tests(TARGET ${name} WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    gtest_add_tests(TARGET ${name} WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endmacro()
 
 cavc_add_test(TEST_cavc_pline)
