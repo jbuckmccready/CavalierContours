@@ -1,8 +1,10 @@
-#include "c_api_test_helpers.hpp"
-#include "cavaliercontours.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "c_api_include/cavaliercontours.h"
+#include "c_api_test_helpers.hpp"
 
 namespace t = testing;
 
@@ -19,6 +21,7 @@ struct ParallelOffsetTestCase {
         pline(plineFromVertexes(plineVertexes, isClosed)),
         expectedResult(std::move(expectedResult)) {}
 };
+
 std::ostream &operator<<(std::ostream &os, ParallelOffsetTestCase const &c) {
   os << "{ " << c.name << ", offsetDelta: " << c.offsetDelta << " }";
   return os;

@@ -1,8 +1,10 @@
-#include "c_api_test_helpers.hpp"
-#include "cavaliercontours.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "c_api_include/cavaliercontours.h"
+#include "c_api_test_helpers.hpp"
 
 namespace t = testing;
 
@@ -32,7 +34,6 @@ void cavc_plineTests::TearDown() {
 }
 
 TEST_F(cavc_plineTests, cavc_pline_new) {
-
   // test capacity
   EXPECT_EQ(cavc_pline_capacity(pline1), initialPline1Size());
 

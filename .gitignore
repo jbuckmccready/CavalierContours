@@ -1,1 +1,25 @@
-*.user
+# Forder
+.vs/*
+.idea/*
+x64/*
+CMakeLists.txt.user
+out
+build
+install
+*.ts
+*.qm
+.vscode
+
+package
+dist
+
+regressions/output
+regressions/Files
+WinUserSetting.cmake
+launch.json
+settings.json
+filename.txt
+CMakePresets.json
+
+.VSCodeCounter/*
+.DS_Store

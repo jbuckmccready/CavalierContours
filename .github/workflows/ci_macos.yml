@@ -1,0 +1,39 @@
+name: macOS
+
+on:
+    [push, pull_request]
+
+jobs:
+    mac-clang:
+        runs-on: macos-latest
+        name: mac-clang-release
+
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Install brew and dependencies
+          run: |
+            brew install ninja
+            brew install googletest
+            brew install google-benchmark
+
+        - name: Build Release
+          working-directory: ${{github.workspace}}
+          run: |
+            export PATH="/usr/local/opt/llvm/bin:$PATH"
+            cmake \
+            -DCMAKE_BUILD_TYPE:STRING=Release \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE \
+            -DCMAKE_C_COMPILER:FILEPATH=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -B${{github.workspace}}/build/Mac_Ninja_Release \
+            -S${{github.workspace}} -G Ninja
+            cmake --build ${{github.workspace}}/build/Mac_Ninja_Release --config Release --target all --
+
+        - name: Execute Unit Tests Release
+          working-directory: ${{github.workspace}}/build/Mac_Ninja_Release
+          run: |
+            ctest -T test -j 3 --output-on-failure
+
