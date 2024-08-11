@@ -1,10 +1,13 @@
 #ifndef CAVC_TESTHELPERS_HPP
 #define CAVC_TESTHELPERS_HPP
-#include "cavaliercontours.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 #include <cmath>
+#include <gmock/gmock.h>
 #include <iostream>
+
+#include <gtest/gtest.h>
+
+#include "c_api_include/cavaliercontours.h"
+
 constexpr inline cavc_real PI() { return 3.14159265358979323846264338327950288; }
 constexpr inline cavc_real TEST_EPSILON() { return 1e-5; }
 template <typename Real> inline bool fuzzyEqual(Real const &left, cavc_real const &right) {

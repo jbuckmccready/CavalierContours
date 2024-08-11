@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.21)
 
 # detect if CavalierContours is a subproject or not
 # do not include examples, tests, and benchmarks in that case
 if (NOT DEFINED PROJECT_NAME)
   set(NOT_SUBPROJECT ON)
 endif()
-
 
 project(CavalierContours VERSION 0.1)
 set(CMAKE_CXX_STANDARD 14)
@@ -16,6 +15,7 @@ if (POLICY CMP0077)
   cmake_policy(SET CMP0077 NEW)
 endif ()
 
+# Build options
 option(CAVC_HEADER_ONLY "C++ header only library of CavalierContours, if ON then no library is built" OFF)
 option(CAVC_BUILD_SHARED_LIB "Build the C API CavalierContours dynamic shared library (SET OFF for static library)" ON)
 
@@ -25,8 +25,6 @@ else()
   set(CAVC_CPP_HEADER_ONLY_LIB ${PROJECT_NAME}_header_only)
   set(CAVC_C_API_LIB ${PROJECT_NAME})
 endif()
-
-
 
 add_library(${CAVC_CPP_HEADER_ONLY_LIB} INTERFACE)
 target_include_directories(${CAVC_CPP_HEADER_ONLY_LIB}
@@ -68,7 +66,8 @@ if (NOT_SUBPROJECT AND NOT CAVC_HEADER_ONLY)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
   add_subdirectory(examples)
-  include(CTest)
+  find_package(GTest REQUIRED)
+  include(GoogleTest)
   enable_testing()
   add_subdirectory(tests)
 endif()

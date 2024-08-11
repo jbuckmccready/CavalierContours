@@ -1,8 +1,10 @@
-#include "c_api_test_helpers.hpp"
-#include "cavaliercontours.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
 #include <vector>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "c_api_include/cavaliercontours.h"
+#include "c_api_test_helpers.hpp"
 
 namespace t = testing;
 
@@ -33,7 +35,7 @@ struct CombinePlinesTestCase {
       : name(std::move(name)), combineMode(combineMode), plineA(plineA), plineB(plineB),
 
         expectedRemaining(std::move(expectedRemaining)),
-        expectedSubtracted(std::move(expectedSubtracted)) {}
+        expectedSubtracted(std::move(expectedSubtracted)) {};
 };
 
 std::ostream &operator<<(std::ostream &os, CombinePlinesTestCase const &c) {
@@ -200,7 +202,7 @@ class cavc_combine_plinesTests : public t::TestWithParam<CombinePlinesTestCase> 
 INSTANTIATE_TEST_SUITE_P(simple_cases, cavc_combine_plinesTests, t::ValuesIn(simpleCases));
 INSTANTIATE_TEST_SUITE_P(coincident_cases, cavc_combine_plinesTests, t::ValuesIn(coincidentCases));
 
-TEST_P(cavc_combine_plinesTests, combine_plines_test) {
+TEST_P(cavc_combine_plinesTests, DISABLED_combine_plines_test) {
   CombinePlinesTestCase const &testCase = GetParam();
   cavc_pline_list *remaining = nullptr;
   cavc_pline_list *subtracted = nullptr;

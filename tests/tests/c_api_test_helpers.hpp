@@ -1,10 +1,12 @@
 #ifndef CAVC_API_TEST_HELPERS_HPP
 #define CAVC_API_TEST_HELPERS_HPP
-#include "cavaliercontours.h"
-#include "testhelpers.hpp"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
 #include <iostream>
+
+#include <gtest/gtest.h>
+
+#include "c_api_include/cavaliercontours.h"
+#include "testhelpers.hpp"
 
 inline bool vertexesFuzzyEqual(cavc_vertex const &left, cavc_vertex const &right) {
   return fuzzyEqual(left.x, right.x) && fuzzyEqual(left.y, right.y) &&
