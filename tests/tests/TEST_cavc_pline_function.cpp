@@ -590,7 +590,7 @@ TEST_P(cavc_plineFunctionTests, cavc_get_winding_number) {
   ASSERT_THAT(windingNumberResults, t::Pointwise(t::Eq(), testCase.windingNumberResults));
 }
 
-TEST_P(cavc_plineFunctionTests, DISABLED_cavc_get_extents) {
+TEST_P(cavc_plineFunctionTests, cavc_get_extents) {
   cavc_plineFunctionsTestCase const &testCase = GetParam();
   if (testCase.skipExtentsTest()) {
     GTEST_SKIP();
@@ -692,7 +692,7 @@ TEST_P(cavc_plineFunctionTests, cavc_parallel_offset) {
   }
 }
 
-TEST_P(cavc_plineFunctionTests, DISABLED_combine_with_self_invariants) {
+TEST_P(cavc_plineFunctionTests, combine_with_self_invariants) {
   cavc_plineFunctionsTestCase const &testCase = GetParam();
   if (!testCase.isClosed()) {
     GTEST_SKIP();

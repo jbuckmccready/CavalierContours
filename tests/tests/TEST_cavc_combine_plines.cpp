@@ -52,38 +52,46 @@ static std::vector<CombinePlinesTestCase> createSimpleCases() {
     std::vector<cavc_vertex> plineBVertexes = {{3, -10, 0}, {6, -10, 0}, {6, 10, 0}, {3, 10, 0}};
     cavc_pline *plineA = plineFromVertexes(plineAVertexes, true);
     cavc_pline *plineB = plineFromVertexes(plineBVertexes, true);
-    // Union
     std::vector<PolylineProperties> expectedRemaining;
-    expectedRemaining.emplace_back(10, 109.15381629282, 52.324068506275, 0, -10, 10, 10);
     std::vector<PolylineProperties> expectedSubtracted;
+
+    // Union
+    expectedRemaining.emplace_back(10, 109.15381629282, 52.324068506275, 0, -10, 10, 10);
     cases.emplace_back("circle_rectangle_union", 0, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
 
     // Exclude
-    expectedRemaining.clear();
-    expectedSubtracted.clear();
-    expectedRemaining.emplace_back(3, 19.816835628274, 20.757946197186, 0, -4, 3, 5.5825756949558);
-    expectedRemaining.emplace_back(3, 29.336980664548, 23.492343031178, 6, -3.8989794855664, 10, 6);
+    expectedRemaining.emplace_back(3, 29.336980664548, 23.492343031178, 6, -3.8989794855664, 10,
+                                   5.898979485566356);
+    expectedRemaining.emplace_back(3, 19.816835628274, 20.757946197186, 0, -3.582575694955841, 3,
+                                   5.5825756949558);
     cases.emplace_back("circle_rectangle_exclude", 1, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
-
-    // Intersect
     expectedRemaining.clear();
     expectedSubtracted.clear();
+
+    // Intersect
     expectedRemaining.emplace_back(4, 29.386000046924, 25.091858029623, 3, -4, 6, 6);
     cases.emplace_back("circle_rectangle_intersect", 2, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
 
     // XOR
-    expectedRemaining.clear();
-    expectedRemaining.emplace_back(3, 19.816835628274, 20.757946197186, 0, -4, 3, 5.5825756949558);
+
+    expectedRemaining.emplace_back(3, 19.816835628274, 20.757946197186, 0, -3.582575694955841, 3,
+                                   5.5825756949558);
     expectedRemaining.emplace_back(4, -18.306999976538, 18.582818653767, 3, -10, 6,
                                    -3.5825756949558);
-    expectedRemaining.emplace_back(3, 29.336980664548, 23.492343031178, 6, -3.8989794855664, 10, 6);
+    expectedRemaining.emplace_back(3, 29.336980664548, 23.492343031178, 6, -3.8989794855664, 10,
+                                   5.898979485566356);
     expectedRemaining.emplace_back(4, -12.306999976538, 14.582818653767, 3, 5.5825756949558, 6, 10);
-    expectedSubtracted.clear();
     cases.emplace_back("circle_rectangle_xor", 3, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
   }
 
   return cases;
@@ -101,6 +109,7 @@ static std::vector<CombinePlinesTestCase> createCoincidentCases() {
         {0.25, 0.295, -0.414214},  {0.255, 0.29, 0},  {0.255, 0.24, -0.414214},  {0.25, 0.235, 0}};
     cavc_pline *plineA = plineFromVertexes(plineAVertexes, true);
     cavc_pline *plineB = plineFromVertexes(plineBVertexes, true);
+
     // Union
     std::vector<PolylineProperties> expectedRemaining;
     expectedRemaining.emplace_back(12, -0.032967809756574, 1.6071238962168, -0.255, -0.005, 0.255,
@@ -108,35 +117,36 @@ static std::vector<CombinePlinesTestCase> createCoincidentCases() {
     std::vector<PolylineProperties> expectedSubtracted;
     cases.emplace_back("coincident_case1_union", 0, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
-
-    // Exclude
     expectedRemaining.clear();
     expectedSubtracted.clear();
+
+    // Exclude A from B
     expectedRemaining.emplace_back(4, -0.0023892699081699, 0.49570796326795, -0.105, -0.005, -0.095,
                                    0.235);
     cases.emplace_back("coincident_case1_excludeAFromB", 1, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
-
     expectedRemaining.clear();
     expectedSubtracted.clear();
+
+    // Exclude B from A
     expectedRemaining.emplace_back(10, -0.030578539848405, 1.1314159329489, -0.255, 0.235, 0.255,
                                    0.295);
     cases.emplace_back("coincident_case1_excludeBFromA", 1, plineB, plineA, expectedRemaining,
                        expectedSubtracted);
-
-    // Intersect
     expectedRemaining.clear();
     expectedSubtracted.clear();
+
+    // Intersect
     cases.emplace_back("coincident_case1_intersect", 2, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
+    expectedRemaining.clear();
+    expectedSubtracted.clear();
 
     // XOR
-    expectedRemaining.clear();
     expectedRemaining.emplace_back(4, -0.0023892699081699, 0.49570796326795, -0.105, -0.005, -0.095,
                                    0.235);
     expectedRemaining.emplace_back(10, 0.030578539848405, 1.1314159329489, -0.255, 0.235, 0.255,
                                    0.295);
-    expectedSubtracted.clear();
     cases.emplace_back("coincident_case1_xor", 3, plineA, plineB, expectedRemaining,
                        expectedSubtracted);
   }
@@ -202,7 +212,7 @@ class cavc_combine_plinesTests : public t::TestWithParam<CombinePlinesTestCase> 
 INSTANTIATE_TEST_SUITE_P(simple_cases, cavc_combine_plinesTests, t::ValuesIn(simpleCases));
 INSTANTIATE_TEST_SUITE_P(coincident_cases, cavc_combine_plinesTests, t::ValuesIn(coincidentCases));
 
-TEST_P(cavc_combine_plinesTests, DISABLED_combine_plines_test) {
+TEST_P(cavc_combine_plinesTests, combine_plines_test) {
   CombinePlinesTestCase const &testCase = GetParam();
   cavc_pline_list *remaining = nullptr;
   cavc_pline_list *subtracted = nullptr;
@@ -218,6 +228,7 @@ TEST_P(cavc_combine_plinesTests, DISABLED_combine_plines_test) {
     cavc_pline *pline = cavc_pline_list_get(remaining, i);
     remainingProperties.emplace_back(pline);
   }
+
   ASSERT_THAT(remainingProperties,
               t::UnorderedPointwise(EqIgnoreSignOfArea(), testCase.expectedRemaining));
 
