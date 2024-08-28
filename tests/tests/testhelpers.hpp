@@ -63,4 +63,31 @@ inline std::ostream &operator<<(std::ostream &os, PolylineProperties const &p) {
      << ", maxX: " << p.maxX << ", maxY: " << p.maxY << " }";
   return os;
 }
+
+// Custom function to print differences
+void PrintDiff(const PolylineProperties &expected, const PolylineProperties &actual) {
+  if (expected.vertexCount != actual.vertexCount) {
+    std::cout << "vertexCount: expected " << expected.vertexCount << ", actual "
+              << actual.vertexCount << "\n";
+  }
+  if (!fuzzyEqual(expected.area, actual.area)) {
+    std::cout << "area: expected " << expected.area << ", actual " << actual.area << "\n";
+  }
+  if (!fuzzyEqual(expected.pathLength, actual.pathLength)) {
+    std::cout << "pathLength: expected " << expected.pathLength << ", actual " << actual.pathLength
+              << "\n";
+  }
+  if (!fuzzyEqual(expected.minX, actual.minX)) {
+    std::cout << "minX: expected " << expected.minX << ", actual " << actual.minX << "\n";
+  }
+  if (!fuzzyEqual(expected.minY, actual.minY)) {
+    std::cout << "minY: expected " << expected.minY << ", actual " << actual.minY << "\n";
+  }
+  if (!fuzzyEqual(expected.maxX, actual.maxX)) {
+    std::cout << "maxX: expected " << expected.maxX << ", actual " << actual.maxX << "\n";
+  }
+  if (!fuzzyEqual(expected.maxY, actual.maxY)) {
+    std::cout << "maxY: expected " << expected.maxY << ", actual " << actual.maxY << "\n";
+  }
+}
 #endif // CAVC_TESTHELPERS_HPP

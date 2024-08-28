@@ -26,6 +26,7 @@ macro(cavc_add_test name)
     gtest_add_tests(TARGET ${name} WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endmacro()
 
+cavc_add_test(TEST_sample)
 cavc_add_test(TEST_cavc_pline)
 cavc_add_test(TEST_cavc_pline_function)
 cavc_add_test(TEST_cavc_parallel_offset)

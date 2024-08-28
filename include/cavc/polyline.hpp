@@ -108,6 +108,11 @@ template <typename Real> AABB<Real> getExtents(Polyline<Real> const &pline) {
       Real endAngle = angle(arc.center, v2.pos());
       Real sweepAngle = utils::deltaAngle(startAngle, endAngle);
 
+      // handle special case of half circle, or more than half circle
+      if ((sweepAngle > 0.0) && (v1.bulge() < 0.0)) {
+        sweepAngle = sweepAngle - 2.0 * utils::pi<Real>();
+      }
+
       Real arcXMin, arcYMin, arcXMax, arcYMax;
 
       // crosses PI/2
